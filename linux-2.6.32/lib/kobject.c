@@ -146,7 +146,7 @@ static void kobject_init_internal(struct kobject *kobj)
 {
 	if (!kobj)
 		return;
-	kref_init(&kobj->kref);
+	kref_init(&kobj->kref);                   // set kref -> 1
 	INIT_LIST_HEAD(&kobj->entry);
 	kobj->state_in_sysfs = 0;
 	kobj->state_add_uevent_sent = 0;
@@ -335,6 +335,7 @@ static int kobject_add_varg(struct kobject *kobj, struct kobject *parent,
  * kobject_uevent() with the UEVENT_ADD parameter to ensure that
  * userspace is properly notified of this kobject's creation.
  */
+// 加入linux设备层次
 int kobject_add(struct kobject *kobj, struct kobject *parent,
 		const char *fmt, ...)
 {
@@ -527,7 +528,7 @@ void kobject_del(struct kobject *kobj)
 struct kobject *kobject_get(struct kobject *kobj)
 {
 	if (kobj)
-		kref_get(&kobj->kref);
+		kref_get(&kobj->kref);       // add 1
 	return kobj;
 }
 

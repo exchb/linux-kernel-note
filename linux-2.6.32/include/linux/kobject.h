@@ -56,15 +56,19 @@ enum kobject_action {
 	KOBJ_MAX
 };
 
+/* 永远不要让一个数据结构中包含超过1个kobject,引用计数会坏
+ * 类似base_object
+ * 嵌入数据结构实现OO
+ */
 struct kobject {
-	const char		*name;
-	struct list_head	entry;
-	struct kobject		*parent;
-	struct kset		*kset;
-	struct kobj_type	*ktype;
+	const char		*name;                        // 指向设备名称的指针
+	struct list_head	entry;                    // 挂接到所在kset中去的单元
+	struct kobject		*parent;                  // 指向父对象的指针
+	struct kset		*kset;					      // 所属的kset指针
+	struct kobj_type	*ktype;                   // 指向其对象类型描述符的指针
 	struct sysfs_dirent	*sd;
-	struct kref		kref;
-	unsigned int state_initialized:1;
+	struct kref		kref;                         // 引用计数
+	unsigned int state_initialized:1;             // 标识是否初始化
 	unsigned int state_in_sysfs:1;
 	unsigned int state_add_uevent_sent:1;
 	unsigned int state_remove_uevent_sent:1;
