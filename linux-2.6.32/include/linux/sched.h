@@ -1214,6 +1214,7 @@ struct sched_rt_entity {
 
 struct rcu_node;
 
+// ！
 struct task_struct {
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	void *stack;
@@ -1221,7 +1222,7 @@ struct task_struct {
 	unsigned int flags;	/* per process flags, defined below */
 	unsigned int ptrace;
 
-	int lock_depth;		/* BKL lock depth */
+	int lock_depth;		/* BKL lock depth 内核锁 */
 
 #ifdef CONFIG_SMP
 #ifdef __ARCH_WANT_UNLOCKED_CTXSW
@@ -1300,13 +1301,18 @@ struct task_struct {
 	 * older sibling, respectively.  (p->father can be replaced with 
 	 * p->real_parent->pid)
 	 */
-	struct task_struct *real_parent; /* real parent process */
+	struct task_struct *real_parent; /* real parent process(在被调试下原父进程?) */
+
+	// 接受SIGCHLD的容器？
 	struct task_struct *parent; /* recipient of SIGCHLD, wait4() reports */
 	/*
 	 * children/sibling forms the list of my natural children
+	 * 链表外加当前调试的进程构成所有子进程 ?
 	 */
-	struct list_head children;	/* list of my children */
+	struct list_head children;	/* list of my children 子进程链表 */
 	struct list_head sibling;	/* linkage in my parent's children list */
+
+	// 线程组组长
 	struct task_struct *group_leader;	/* threadgroup leader */
 
 	/*
@@ -1353,6 +1359,7 @@ struct task_struct {
 					 * (notably. ptrace) */
 	struct cred *replacement_session_keyring; /* for KEYCTL_SESSION_TO_PARENT */
 
+	// 除去路径后的可执行文件名
 	char comm[TASK_COMM_LEN]; /* executable name excluding path
 				     - access with [gs]et_task_comm (which lock
 				       it with task_lock())
@@ -1367,8 +1374,11 @@ struct task_struct {
 /* hung task detection */
 	unsigned long last_switch_count;
 #endif
+
 /* CPU-specific state of this task */
+	// 当前进程特定的CPU状态信息
 	struct thread_struct thread;
+
 /* filesystem information */
 	struct fs_struct *fs;
 /* open file information */
