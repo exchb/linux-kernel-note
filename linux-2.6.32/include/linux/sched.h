@@ -22,6 +22,9 @@
 #define CLONE_UNTRACED		0x00800000	/* set if the tracing process can't force CLONE_PTRACE on this clone */
 #define CLONE_CHILD_SETTID	0x01000000	/* set the TID in the child */
 #define CLONE_STOPPED		0x02000000	/* Start in stopped state */
+
+
+// pid命名空间
 #define CLONE_NEWUTS		0x04000000	/* New utsname group? */
 #define CLONE_NEWIPC		0x08000000	/* New ipcs */
 #define CLONE_NEWUSER		0x10000000	/* New user namespace */
@@ -1384,7 +1387,7 @@ struct task_struct {
 /* open file information */
 	struct files_struct *files;
 /* namespaces */
-	struct nsproxy *nsproxy;
+	struct nsproxy *nsproxy;  // 关联到自身的命名空间
 /* signal handlers */
 	struct signal_struct *signal;
 	struct sighand_struct *sighand;
