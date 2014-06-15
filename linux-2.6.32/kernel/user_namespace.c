@@ -19,13 +19,15 @@
  * This is called by copy_creds(), which will finish setting the target task's
  * credentials.
  */
+// 老版本有 clone_user_ns函数
+// sys_clone->do_fork->copy_process->copy_creds->create_user_ns
 int create_user_ns(struct cred *new)
 {
 	struct user_namespace *ns;
 	struct user_struct *root_user;
 	int n;
 
-	ns = kmalloc(sizeof(struct user_namespace), GFP_KERNEL);
+	ns = kmalloc(sizeof(struct user_namespace), GFP_KERNEL);    //gfp.h
 	if (!ns)
 		return -ENOMEM;
 

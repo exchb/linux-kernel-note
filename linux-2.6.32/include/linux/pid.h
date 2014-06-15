@@ -49,16 +49,18 @@ enum pid_type
 
 struct upid {
 	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
-	int nr;
-	struct pid_namespace *ns;
+	int nr;                                     // id的值
+	struct pid_namespace *ns;                   // id所属的命名空间
 	struct hlist_node pid_chain;
 };
 
+// 内核对pid的内部表示
 struct pid
 {
 	atomic_t count;
 	unsigned int level;
 	/* lists of tasks that use this pid */
+    // 使用该pid的进程列表
 	struct hlist_head tasks[PIDTYPE_MAX];
 	struct rcu_head rcu;
 	struct upid numbers[1];

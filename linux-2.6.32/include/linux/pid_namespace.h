@@ -16,14 +16,18 @@ struct pidmap {
 
 struct bsd_acct_struct;
 
+/* 每个pid命名空间有一个进程,类似init,
+ * 必须完成对孤儿进程调用wait4操作
+ * child_reaper指向该进程
+ */
 struct pid_namespace {
 	struct kref kref;
 	struct pidmap pidmap[PIDMAP_ENTRIES];
 	int last_pid;
 	struct task_struct *child_reaper;
 	struct kmem_cache *pid_cachep;
-	unsigned int level;
-	struct pid_namespace *parent;
+	unsigned int level;                       // 初始为0
+	struct pid_namespace *parent;             // 指向父命名空间
 #ifdef CONFIG_PROC_FS
 	struct vfsmount *proc_mnt;
 #endif
