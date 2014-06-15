@@ -1292,7 +1292,7 @@ struct task_struct {
 	unsigned sched_reset_on_fork:1;
 
 	pid_t pid;
-	pid_t tgid;
+	pid_t tgid;                     // 线程组id
 
 #ifdef CONFIG_CC_STACKPROTECTOR
 	/* Canary value for the -fstack-protector gcc feature */
