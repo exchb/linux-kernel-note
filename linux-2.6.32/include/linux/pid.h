@@ -58,7 +58,7 @@ struct upid {
 struct pid
 {
 	atomic_t count;
-	unsigned int level;
+	unsigned int level;                        // 命名空间层次深度
 	/* lists of tasks that use this pid */
     // 使用该pid的进程列表
 	struct hlist_head tasks[PIDTYPE_MAX];

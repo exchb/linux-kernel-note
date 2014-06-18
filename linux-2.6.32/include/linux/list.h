@@ -554,11 +554,13 @@ static inline void INIT_HLIST_NODE(struct hlist_node *h)
 	h->pprev = NULL;
 }
 
+// 判断节点是否未插入链表
 static inline int hlist_unhashed(const struct hlist_node *h)
 {
 	return !h->pprev;
 }
 
+// 判断空
 static inline int hlist_empty(const struct hlist_head *h)
 {
 	return !h->first;
