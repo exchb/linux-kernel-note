@@ -46,24 +46,24 @@ enum pid_type
  * seen in particular namespace. Later the struct pid is found with
  * find_pid_ns() using the int nr and struct pid_namespace *ns.
  */
-
+// 局部命名空间可见，参考上面的注释
 struct upid {
 	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
-	int nr;                                     // id的值
+	int nr;                                     // 局部id的值
 	struct pid_namespace *ns;                   // id所属的命名空间
-	struct hlist_node pid_chain;
+	struct hlist_node pid_chain;                // 挂载到全局的pid_hash上
 };
 
 // 内核对pid的内部表示
 struct pid
 {
-	atomic_t count;
+	atomic_t count;                            // pid 引用计数
 	unsigned int level;                        // 命名空间层次深度
 	/* lists of tasks that use this pid */
     // 使用该pid的进程列表
-	struct hlist_head tasks[PIDTYPE_MAX];
+	struct hlist_head tasks[PIDTYPE_MAX];      // tasks[PIDTYPE_PID] tasks[PIDTYPE_SID] ....
 	struct rcu_head rcu;
-	struct upid numbers[1];
+	struct upid numbers[1];                    // numbers[level0] numbers[level1] ....
 };
 
 extern struct pid init_struct_pid;

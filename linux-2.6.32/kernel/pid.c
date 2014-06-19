@@ -522,7 +522,7 @@ void __init pidhash_init(void)
 	pidhash_size = 1 << pidhash_shift;
 
 	for (i = 0; i < pidhash_size; i++)
-		INIT_HLIST_HEAD(&pid_hash[i]);
+		INIT_HLIST_HEAD(&pid_hash[i]);   // 初始化(给struct hlist_head ->first空指针)
 }
 
 void __init pidmap_init(void)
