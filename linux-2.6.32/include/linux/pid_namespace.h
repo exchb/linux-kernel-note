@@ -9,8 +9,8 @@
 
 struct pidmap {
        atomic_t nr_free;             // 表示还有多少位为0
-       void *page;                   // 连续内存
-};
+       void *page;                   // 页指针 
+;
 
 #define PIDMAP_ENTRIES         ((PID_MAX_LIMIT + 8*PAGE_SIZE - 1)/PAGE_SIZE/8)
 

@@ -50,8 +50,8 @@ int pid_max = PID_MAX_DEFAULT;
 int pid_max_min = RESERVED_PIDS + 1;
 int pid_max_max = PID_MAX_LIMIT;
 
-#define BITS_PER_PAGE		(PAGE_SIZE*8)
-#define BITS_PER_PAGE_MASK	(BITS_PER_PAGE-1)
+#define BITS_PER_PAGE		(PAGE_SIZE*8)   // for 32 , PAGE_SIZE 1UL<<12 == 4096 , <<3 刚好是pid_max
+#define BITS_PER_PAGE_MASK	(BITS_PER_PAGE-1) // for 32 0x7fff
 
 static inline int mk_pid(struct pid_namespace *pid_ns,
 		struct pidmap *map, int off)
@@ -133,7 +133,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 	pid = last + 1;             // 可能会分配到的pid
 	if (pid >= pid_max)
 		pid = RESERVED_PIDS;    // 回绕
-	offset = pid & BITS_PER_PAGE_MASK;
+	offset = pid & BITS_PER_PAGE_MASK;       // pid & 0x7fff 最高位置0
 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
 	// 待扫描的页面数目
 	max_scan = (pid_max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
@@ -153,10 +153,11 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 			if (unlikely(!map->page))
 				break;
 		}
+        // 如果nr_free不为0,说明还有可以分配的pid位
 		if (likely(atomic_read(&map->nr_free))) {
 			do {
 				if (!test_and_set_bit(offset, map->page)) {
-					atomic_dec(&map->nr_free);
+					atomic_dec(&map->nr_free);               // 空闲计数-1
 					pid_ns->last_pid = pid;
 					return pid;
 				}
@@ -184,7 +185,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 				break;
 		}
 		pid = mk_pid(pid_ns, map, offset);
-	}
+	}  // end of for
 	return -1;
 }
 
