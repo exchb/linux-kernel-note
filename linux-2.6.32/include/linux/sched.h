@@ -1589,6 +1589,7 @@ static inline int rt_task(struct task_struct *p)
 	return rt_prio(p->prio);
 }
 
+// ...
 static inline struct pid *task_pid(struct task_struct *task)
 {
 	return task->pids[PIDTYPE_PID].pid;

@@ -130,9 +130,9 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 	int i, offset, max_scan, pid, last = pid_ns->last_pid;
 	struct pidmap *map;
 
-	pid = last + 1;	// 可能会分配到的pid
+	pid = last + 1;             // 可能会分配到的pid
 	if (pid >= pid_max)
-		pid = RESERVED_PIDS;	// 回绕
+		pid = RESERVED_PIDS;    // 回绕
 	offset = pid & BITS_PER_PAGE_MASK;
 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
 	// 待扫描的页面数目
@@ -302,6 +302,16 @@ out_free:
 	goto out;
 }
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief  用局部id和命名空间确定pid实例
+ *
+ * @param nr    局部id
+ * @param ns    namespace
+ *
+ * @returns   NULL or pid
+ */
+/* ----------------------------------------------------------------------------*/
 struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
 {
 	struct hlist_node *elem;
@@ -325,6 +335,9 @@ EXPORT_SYMBOL_GPL(find_vpid);
 
 /*
  * attach_pid() must be called with the tasklist_lock write-held.
+ */
+/* 建立双向连接，task_struct 可以 task_struct->pids[type]->pid 访问其pid
+ * pid可以遍历pid->tasks[type] 找task_struct
  */
 void attach_pid(struct task_struct *task, enum pid_type type,
 		struct pid *pid)
@@ -392,6 +405,7 @@ EXPORT_SYMBOL(pid_task);
 /*
  * Must be called under rcu_read_lock() or with tasklist_lock read-held.
  */
+// 找进程
 struct task_struct *find_task_by_pid_ns(pid_t nr, struct pid_namespace *ns)
 {
 	return pid_task(find_pid_ns(nr, ns), PIDTYPE_PID);
@@ -402,6 +416,7 @@ struct task_struct *find_task_by_vpid(pid_t vnr)
 	return find_task_by_pid_ns(vnr, current->nsproxy->pid_ns);
 }
 
+// .. 合并了..
 struct pid *get_task_pid(struct task_struct *task, enum pid_type type)
 {
 	struct pid *pid;
@@ -436,11 +451,22 @@ struct pid *find_get_pid(pid_t nr)
 }
 EXPORT_SYMBOL_GPL(find_get_pid);
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief  查找命名空间该pid结构对应的数字id
+ *
+ * @param pid   pid结构，从get_task_pid获取
+ * @param ns    当前命名空间
+ *
+ * @returns   数字id..pit_t 就是个int
+ */
+/* ----------------------------------------------------------------------------*/
 pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns)
 {
 	struct upid *upid;
 	pid_t nr = 0;
-
+    
+    // 当前命名空间层级小于父空间层级 ?
 	if (pid && ns->level <= pid->level) {
 		upid = &pid->numbers[ns->level];
 		if (upid->ns == ns)

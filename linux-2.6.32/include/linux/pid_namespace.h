@@ -8,8 +8,8 @@
 #include <linux/kref.h>
 
 struct pidmap {
-       atomic_t nr_free;
-       void *page;
+       atomic_t nr_free;             // 表示还有多少位为0
+       void *page;                   // 连续内存
 };
 
 #define PIDMAP_ENTRIES         ((PID_MAX_LIMIT + 8*PAGE_SIZE - 1)/PAGE_SIZE/8)
@@ -22,9 +22,9 @@ struct bsd_acct_struct;
  */
 struct pid_namespace {
 	struct kref kref;
-	struct pidmap pidmap[PIDMAP_ENTRIES];
-	int last_pid;
-	struct task_struct *child_reaper;
+	struct pidmap pidmap[PIDMAP_ENTRIES];     // 这个bitmap控制该namespace上pid的分配
+	int last_pid;                             // 记录上次分配的pid
+	struct task_struct *child_reaper;         // 当父进程先于子进程介绍时，把子进程的父进程更新为child_reaper
 	struct kmem_cache *pid_cachep;
 	unsigned int level;                       // 初始为0
 	struct pid_namespace *parent;             // 指向父命名空间

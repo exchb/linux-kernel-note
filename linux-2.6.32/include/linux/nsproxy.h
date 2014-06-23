@@ -27,8 +27,8 @@ struct nsproxy {
 	struct uts_namespace *uts_ns; // 内核名称，版本(unix timeshare system)
 	struct ipc_namespace *ipc_ns; // 所有与进程通信有关的信息
 	struct mnt_namespace *mnt_ns; // 已经装载的文件系统视图(chroot?)
-	struct pid_namespace *pid_ns;
-	struct net 	     *net_ns;
+	struct pid_namespace *pid_ns; // 进程id信息
+	struct net       *net_ns;
 };
 extern struct nsproxy init_nsproxy;
 
