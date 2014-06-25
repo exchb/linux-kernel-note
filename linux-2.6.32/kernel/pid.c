@@ -268,7 +268,8 @@ struct pid *alloc_pid(struct pid_namespace *ns)
     pid = kmem_cache_alloc(ns->pid_cachep, GFP_KERNEL);
     if (!pid)
         goto out;
-
+    
+    // 为每一层namespace给一个pid值
     tmp = ns;
     for (i = ns->level; i >= 0; i--) {
         nr = alloc_pidmap(tmp);
@@ -289,6 +290,8 @@ struct pid *alloc_pid(struct pid_namespace *ns)
     spin_lock_irq(&pidmap_lock);
     for (i = ns->level; i >= 0; i--) {
         upid = &pid->numbers[i];
+
+        // 把pid_chain挂在pid_hash[]上
         hlist_add_head_rcu(&upid->pid_chain,
                 &pid_hash[pid_hashfn(upid->nr, upid->ns)]);
     }
@@ -342,6 +345,7 @@ EXPORT_SYMBOL_GPL(find_vpid);
  */
 /* 建立双向连接，task_struct 可以 task_struct->pids[type]->pid 访问其pid
  * pid可以遍历pid->tasks[type] 找task_struct
+ * 分配struct pid实例后，用这个函数附加到task_struct的pid_link中
  */
 void attach_pid(struct task_struct *task, enum pid_type type,
         struct pid *pid)

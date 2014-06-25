@@ -5,10 +5,10 @@
 
 enum pid_type
 {
-	PIDTYPE_PID,
-	PIDTYPE_PGID,
-	PIDTYPE_SID,
-	PIDTYPE_MAX
+    PIDTYPE_PID,
+    PIDTYPE_PGID,
+    PIDTYPE_SID,
+    PIDTYPE_MAX
 };
 
 /*
@@ -48,37 +48,40 @@ enum pid_type
  */
 // 局部命名空间可见，参考上面的注释
 struct upid {
-	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
-	int nr;                                     // 局部id的值
-	struct pid_namespace *ns;                   // id所属的命名空间
-	struct hlist_node pid_chain;                // 挂载到全局的pid_hash上
+    /* Try to keep pid_chain in the same cacheline as nr for find_vpid */
+    int nr;                                     // 局部id的值
+    struct pid_namespace *ns;                   // id所属的命名空间
+    struct hlist_node pid_chain;                // 挂载到全局的pid_hash上
 };
 
 // 内核对pid的内部表示,为了每个namespace都可以看见不同的pid，需要一个结构
 struct pid
 {
-	atomic_t count;                            // pid 引用计数
-	unsigned int level;                        // 命名空间层次深度
-	/* lists of tasks that use this pid */
+    atomic_t count;                            // pid 引用计数
+    unsigned int level;                        // 命名空间层次深度
+    /* lists of tasks that use this pid */
     // 使用该pid的进程列表
-	struct hlist_head tasks[PIDTYPE_MAX];      // tasks[PIDTYPE_PID] tasks[PIDTYPE_SID] ....
-	struct rcu_head rcu;
-	struct upid numbers[1];                    // numbers[level0] numbers[level1] ....这里引入数字pid
+    struct hlist_head tasks[PIDTYPE_MAX];      // tasks[PIDTYPE_PID] tasks[PIDTYPE_SID] ....
+    struct rcu_head rcu;
+    struct upid numbers[1];                    // numbers[level0] numbers[level1] ....这里引入数字pid
 };
 
 extern struct pid init_struct_pid;
 
+// 在struct task_struct里包含pid_link,
+// 这货包含hash节点，放在struct pid_hash上.
+// 供find_pid_ns使用，即通过pid和命名空间寻找pid实例
 struct pid_link
 {
-	struct hlist_node node;
-	struct pid *pid;
+    struct hlist_node node;
+    struct pid *pid;
 };
 
 static inline struct pid *get_pid(struct pid *pid)
 {
-	if (pid)
-		atomic_inc(&pid->count);
-	return pid;
+    if (pid)
+        atomic_inc(&pid->count);
+    return pid;
 }
 
 extern void put_pid(struct pid *pid);
@@ -92,12 +95,12 @@ extern struct pid *get_task_pid(struct task_struct *task, enum pid_type type);
  * write-held.
  */
 extern void attach_pid(struct task_struct *task, enum pid_type type,
-			struct pid *pid);
+            struct pid *pid);
 extern void detach_pid(struct task_struct *task, enum pid_type);
 extern void change_pid(struct task_struct *task, enum pid_type,
-			struct pid *pid);
+            struct pid *pid);
 extern void transfer_pid(struct task_struct *old, struct task_struct *new,
-			 enum pid_type);
+             enum pid_type);
 
 struct pid_namespace;
 extern struct pid_namespace init_pid_ns;
@@ -129,17 +132,17 @@ extern void free_pid(struct pid *pid);
  * allocated.
  *
  * NOTE:
- * 	ns_of_pid() is expected to be called for a process (task) that has
- * 	an attached 'struct pid' (see attach_pid(), detach_pid()) i.e @pid
- * 	is expected to be non-NULL. If @pid is NULL, caller should handle
- * 	the resulting NULL pid-ns.
+ *     ns_of_pid() is expected to be called for a process (task) that has
+ *     an attached 'struct pid' (see attach_pid(), detach_pid()) i.e @pid
+ *     is expected to be non-NULL. If @pid is NULL, caller should handle
+ *     the resulting NULL pid-ns.
  */
 static inline struct pid_namespace *ns_of_pid(struct pid *pid)
 {
-	struct pid_namespace *ns = NULL;
-	if (pid)
-		ns = pid->numbers[pid->level].ns;
-	return ns;
+    struct pid_namespace *ns = NULL;
+    if (pid)
+        ns = pid->numbers[pid->level].ns;
+    return ns;
 }
 
 /*
@@ -155,39 +158,39 @@ static inline struct pid_namespace *ns_of_pid(struct pid *pid)
 
 static inline pid_t pid_nr(struct pid *pid)
 {
-	pid_t nr = 0;
-	if (pid)
-		nr = pid->numbers[0].nr;
-	return nr;
+    pid_t nr = 0;
+    if (pid)
+        nr = pid->numbers[0].nr;
+    return nr;
 }
 
 pid_t pid_nr_ns(struct pid *pid, struct pid_namespace *ns);
 pid_t pid_vnr(struct pid *pid);
 
-#define do_each_pid_task(pid, type, task)				\
-	do {								\
-		struct hlist_node *pos___;				\
-		if ((pid) != NULL)					\
-			hlist_for_each_entry_rcu((task), pos___,	\
-				&(pid)->tasks[type], pids[type].node) {
+#define do_each_pid_task(pid, type, task)                \
+    do {                                \
+        struct hlist_node *pos___;                \
+        if ((pid) != NULL)                    \
+            hlist_for_each_entry_rcu((task), pos___,    \
+                &(pid)->tasks[type], pids[type].node) {
 
-			/*
-			 * Both old and new leaders may be attached to
-			 * the same pid in the middle of de_thread().
-			 */
-#define while_each_pid_task(pid, type, task)				\
-				if (type == PIDTYPE_PID)		\
-					break;				\
-			}						\
-	} while (0)
+            /*
+             * Both old and new leaders may be attached to
+             * the same pid in the middle of de_thread().
+             */
+#define while_each_pid_task(pid, type, task)                \
+                if (type == PIDTYPE_PID)        \
+                    break;                \
+            }                        \
+    } while (0)
 
-#define do_each_pid_thread(pid, type, task)				\
-	do_each_pid_task(pid, type, task) {				\
-		struct task_struct *tg___ = task;			\
-		do {
+#define do_each_pid_thread(pid, type, task)                \
+    do_each_pid_task(pid, type, task) {                \
+        struct task_struct *tg___ = task;            \
+        do {
 
-#define while_each_pid_thread(pid, type, task)				\
-		} while_each_thread(tg___, task);			\
-		task = tg___;						\
-	} while_each_pid_task(pid, type, task)
+#define while_each_pid_thread(pid, type, task)                \
+        } while_each_thread(tg___, task);            \
+        task = tg___;                        \
+    } while_each_pid_task(pid, type, task)
 #endif /* _LINUX_PID_H */
