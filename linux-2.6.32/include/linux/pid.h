@@ -1,3 +1,12 @@
+/**
+ * @file pid.h
+ * @brief  task_struct->pids为struct pid_link
+ *         task_struct->pids[PIDTYPE_PID].pid可以获取与task_struct相关的pid实例
+ *         task->group_leader->pids[PIDTYPE_PID].pid可获取组长pid势力
+ *
+ *         pid实例可以通过pid->numbers[ns->level] 获取其相关namespace的upid实例
+ */
+
 #ifndef _LINUX_PID_H
 #define _LINUX_PID_H
 

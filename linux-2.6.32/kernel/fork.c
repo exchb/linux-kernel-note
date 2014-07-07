@@ -234,7 +234,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 	if (!tsk)
 		return NULL;
 
-	ti = alloc_thread_info(tsk);
+	ti = alloc_thread_info(tsk);            // 分配新进程的thread_info结构
 	if (!ti) {
 		free_task_struct(tsk);
 		return NULL;
@@ -992,6 +992,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	struct task_struct *p;
 	int cgroup_callbacks_done = 0;
 
+    // 不允许创建一个新的namespace的同时共享文件系统
 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
 		return ERR_PTR(-EINVAL);
 
@@ -999,6 +1000,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	 * Thread groups must share signals as well, and detached threads
 	 * can only be started up within the thread group.
 	 */
+    // 如果是创建线程，必须激活信号和信号处理共享
 	if ((clone_flags & CLONE_THREAD) && !(clone_flags & CLONE_SIGHAND))
 		return ERR_PTR(-EINVAL);
 
@@ -1007,6 +1009,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	 * thread groups also imply shared VM. Blocking this case allows
 	 * for various simplifications in other code.
 	 */
+    // 只有开了共享地址空间，才能共享信号
 	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
 		return ERR_PTR(-EINVAL);
 
@@ -1020,12 +1023,12 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 				current->signal->flags & SIGNAL_UNKILLABLE)
 		return ERR_PTR(-EINVAL);
 
-	retval = security_task_create(clone_flags);
+	retval = security_task_create(clone_flags);   // 对clone_flags检查，是否符合创建进程需要的空间/用户配额
 	if (retval)
 		goto fork_out;
 
 	retval = -ENOMEM;
-	p = dup_task_struct(current);
+	p = dup_task_struct(current);                 // 建立当前进程的副本,新进程只有核心态栈不同
 	if (!p)
 		goto fork_out;
 
@@ -1371,6 +1374,10 @@ struct task_struct * __cpuinit fork_idle(int cpu)
  * It copies the process, and if successful kick-starts
  * it and waits for it to finish using the VM if required.
  */
+// arch/x86/kernel/process.c
+// int sys_fork()
+// return do_fork(SIGCHLD,regs.esp,&regs,0,NULL,NULL)
+// 起始地址在esp中保存
 long do_fork(unsigned long clone_flags,
 	      unsigned long stack_start,
 	      struct pt_regs *regs,
