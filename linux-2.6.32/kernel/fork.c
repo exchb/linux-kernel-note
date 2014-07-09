@@ -240,17 +240,17 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 		return NULL;
 	}
 
- 	err = arch_dup_task_struct(tsk, orig);
+ 	err = arch_dup_task_struct(tsk, orig);  // 复制task_struct结构
 	if (err)
 		goto out;
 
-	tsk->stack = ti;
+	tsk->stack = ti;                        // 修改其栈/thread_info
 
 	err = prop_local_init_single(&tsk->dirties);
 	if (err)
 		goto out;
 
-	setup_thread_stack(tsk, orig);
+	setup_thread_stack(tsk, orig);          // 设置stack的布局...(what it is?)
 	stackend = end_of_stack(tsk);
 	*stackend = STACK_END_MAGIC;	/* for overflow detection */
 
@@ -1028,7 +1028,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		goto fork_out;
 
 	retval = -ENOMEM;
-	p = dup_task_struct(current);                 // 建立当前进程的副本,新进程只有核心态栈不同
+	p = dup_task_struct(current);                 // 建立当前进程的副本,新进程只有核心态栈不同(for IA32 内核栈两页)
 	if (!p)
 		goto fork_out;
 
