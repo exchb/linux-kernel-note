@@ -240,7 +240,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 		return NULL;
 	}
 
- 	err = arch_dup_task_struct(tsk, orig);  // 复制task_struct结构
+ 	err = arch_dup_task_struct(tsk, orig);  // 复制task_struct结构 tsk->stack == 
 	if (err)
 		goto out;
 
@@ -252,7 +252,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 
 	setup_thread_stack(tsk, orig);          // 设置stack的布局...(what it is?)
 	stackend = end_of_stack(tsk);
-	*stackend = STACK_END_MAGIC;	/* for overflow detection */
+	*stackend = STACK_END_MAGIC;	/* for overflow detection 栈声明为数组，正向。栈的使用是倒向 */
 
 #ifdef CONFIG_CC_STACKPROTECTOR
 	tsk->stack_canary = get_random_int();

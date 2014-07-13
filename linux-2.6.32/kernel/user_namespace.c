@@ -21,6 +21,7 @@
  */
 // 老版本有 clone_user_ns函数
 // sys_clone->do_fork->copy_process->copy_creds->create_user_ns
+// 每个namespace有一份userns
 int create_user_ns(struct cred *new)
 {
 	struct user_namespace *ns;

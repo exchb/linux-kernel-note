@@ -324,6 +324,8 @@ struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
     struct hlist_node *elem;
     struct upid *pnr;
 
+    // 在alloc_pid的时候挂上pid_chain
+    // struct upid->pid_chain
     hlist_for_each_entry_rcu(pnr, elem,
             &pid_hash[pid_hashfn(nr, ns)], pid_chain)
         if (pnr->nr == nr && pnr->ns == ns)
@@ -343,10 +345,6 @@ EXPORT_SYMBOL_GPL(find_vpid);
 /*
  * attach_pid() must be called with the tasklist_lock write-held.
  */
-/* 建立双向连接，task_struct 可以 task_struct->pids[type]->pid 访问其pid
- * pid可以遍历pid->tasks[type] 找task_struct
- * 分配struct pid实例后，用这个函数附加到task_struct的pid_link中
- */
 void attach_pid(struct task_struct *task, enum pid_type type,
         struct pid *pid)
 {
@@ -354,7 +352,7 @@ void attach_pid(struct task_struct *task, enum pid_type type,
 
     link = &task->pids[type];
     link->pid = pid;
-    hlist_add_head_rcu(&link->node, &pid->tasks[type]);
+    hlist_add_head_rcu(&link->node, &pid->tasks[type]);  //struct pid -> struct hlist_head tasks[]
 }
 
 static void __change_pid(struct task_struct *task, enum pid_type type,
@@ -546,6 +544,7 @@ struct pid *find_ge_pid(int nr, struct pid_namespace *ns)
  * more.
  * minimum : 2^4(pidhash_shift)
  */
+// pid_hash放了所有的upid
 void __init pidhash_init(void)
 {
     int i, pidhash_size;

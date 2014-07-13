@@ -55,7 +55,7 @@ enum pid_type
  * seen in particular namespace. Later the struct pid is found with
  * find_pid_ns() using the int nr and struct pid_namespace *ns.
  */
-// 局部命名空间可见，参考上面的注释
+// 局部命名空间可见 struct pid -> upid(upid->nr == ns_pid)
 struct upid {
     /* Try to keep pid_chain in the same cacheline as nr for find_vpid */
     int nr;                                     // 局部id的值
@@ -63,7 +63,13 @@ struct upid {
     struct hlist_node pid_chain;                // 挂载到全局的pid_hash上
 };
 
-// 内核对pid的内部表示,为了每个namespace都可以看见不同的pid，需要一个结构
+/* 内核对pid的内部表示,为了每个namespace都可以看见同
+ * 一进程的不同的pid，需要一个结构
+ * 该结构对应一个进程.包含所有可见的namespace中的uid
+ *
+ * task_struct->pid_link(pids[PIDTYPE])->pid->upid 其中pid根据level确定upid
+ * pid->tasks[PIDTYPE] 获取task_struct
+ */
 struct pid
 {
     atomic_t count;                            // pid 引用计数
@@ -72,14 +78,12 @@ struct pid
     // 使用该pid的进程列表
     struct hlist_head tasks[PIDTYPE_MAX];      // tasks[PIDTYPE_PID] tasks[PIDTYPE_SID] ....
     struct rcu_head rcu;
-    struct upid numbers[1];                    // numbers[level0] numbers[level1] ....这里引入数字pid
+    struct upid numbers[1];                    // 每个number对应一层namespace,用于取某进程在各个namespace的upid
 };
 
 extern struct pid init_struct_pid;
 
-// 在struct task_struct里包含pid_link,
-// 这货包含hash节点，放在struct pid_hash上.
-// 供find_pid_ns使用，即通过pid和命名空间寻找pid实例
+// 在task_struct中,每一个PIDTYPE有一个pid_link
 struct pid_link
 {
     struct hlist_node node;

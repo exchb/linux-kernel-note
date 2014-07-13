@@ -24,9 +24,9 @@ struct pid_namespace {
 	struct kref kref;
 	struct pidmap pidmap[PIDMAP_ENTRIES];     // 这个bitmap控制该namespace上pid的分配
 	int last_pid;                             // 记录上次分配的pid
-	struct task_struct *child_reaper;         // 当父进程先于子进程介绍时，把子进程的父进程更新为child_reaper
+	struct task_struct *child_reaper;         // 指向该命名空间的init进程
 	struct kmem_cache *pid_cachep;
-	unsigned int level;                       // 初始为0
+	unsigned int level;                       // 初始为0,命名空间层级
 	struct pid_namespace *parent;             // 指向父命名空间
 #ifdef CONFIG_PROC_FS
 	struct vfsmount *proc_mnt;
