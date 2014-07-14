@@ -993,6 +993,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	int cgroup_callbacks_done = 0;
 
     // 不允许创建一个新的namespace的同时共享文件系统
+    // 意味着不同的namespace必须有不同的filesystem?  TODO
 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
 		return ERR_PTR(-EINVAL);
 
@@ -1438,7 +1439,8 @@ long do_fork(unsigned long clone_flags,
 
 		trace_sched_process_fork(current, p);
 
-		nr = task_pid_vnr(p);
+        // 在copy_process中已经alloc_pid
+		nr = task_pid_vnr(p);    // task_struct and current->nsproxy->pid_ns
 
 		if (clone_flags & CLONE_PARENT_SETTID)
 			put_user(nr, parent_tidptr);
@@ -1458,7 +1460,7 @@ long do_fork(unsigned long clone_flags,
 		 * clear it and set the child going.
 		 */
 		p->flags &= ~PF_STARTING;
-
+        // for ptrace
 		if (unlikely(clone_flags & CLONE_STOPPED)) {
 			/*
 			 * We'll start up with an immediate SIGSTOP.
@@ -1467,7 +1469,7 @@ long do_fork(unsigned long clone_flags,
 			set_tsk_thread_flag(p, TIF_SIGPENDING);
 			__set_task_state(p, TASK_STOPPED);
 		} else {
-			wake_up_new_task(p, clone_flags);
+			wake_up_new_task(p, clone_flags);          // 将子进程添加到调度器,使得子进程能快速运行
 		}
 
 		tracehook_report_clone_complete(trace, regs,
@@ -1475,7 +1477,7 @@ long do_fork(unsigned long clone_flags,
 
 		if (clone_flags & CLONE_VFORK) {
 			freezer_do_not_count();
-			wait_for_completion(&vfork);
+			wait_for_completion(&vfork);               // 冻结父进程到子进程结束或者子进程调用exec
 			freezer_count();
 			tracehook_report_vfork_done(p, nr);
 		}
