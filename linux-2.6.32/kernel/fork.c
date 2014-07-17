@@ -234,17 +234,17 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 	if (!tsk)
 		return NULL;
 
-	ti = alloc_thread_info(tsk);            // 分配新进程的thread_info结构
+	ti = alloc_thread_info(tsk);            // 分配新进程的thread_info结构(thread_info包含task_struct)
 	if (!ti) {
 		free_task_struct(tsk);
 		return NULL;
 	}
 
- 	err = arch_dup_task_struct(tsk, orig);  // 复制task_struct结构 tsk->stack == 
+ 	err = arch_dup_task_struct(tsk, orig);  // 完全复制task_struct结构
 	if (err)
 		goto out;
 
-	tsk->stack = ti;                        // 修改其栈/thread_info
+	tsk->stack = ti;                        // 修改其栈/thread_info(struct task_struct.void * stack)
 
 	err = prop_local_init_single(&tsk->dirties);
 	if (err)
@@ -1010,7 +1010,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	 * thread groups also imply shared VM. Blocking this case allows
 	 * for various simplifications in other code.
 	 */
-    // 只有开了共享地址空间，才能共享信号
+    // 只有开了共享虚拟地址空间，才能共享信号
 	if ((clone_flags & CLONE_SIGHAND) && !(clone_flags & CLONE_VM))
 		return ERR_PTR(-EINVAL);
 
@@ -1030,6 +1030,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
 	retval = -ENOMEM;
 	p = dup_task_struct(current);                 // 建立当前进程的副本,新进程只有核心态栈不同(for IA32 内核栈两页)
+                                                  // task_struct->stack(struct thread_union)
 	if (!p)
 		goto fork_out;
 
@@ -1041,6 +1042,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
 	DEBUG_LOCKS_WARN_ON(!p->softirqs_enabled);
 #endif
+
+    // 如果超过了rlimit限制且当前用户不是root用户,或者没有特权(capability),则不允许fork
 	retval = -EAGAIN;
 	if (atomic_read(&p->real_cred->user->processes) >=
 			p->signal->rlim[RLIMIT_NPROC].rlim_cur) {
@@ -1049,7 +1052,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 			goto bad_fork_free;
 	}
 
-	retval = copy_creds(p, clone_flags);
+	retval = copy_creds(p, clone_flags);          // 安全验证?
 	if (retval < 0)
 		goto bad_fork_free;
 
@@ -1141,7 +1144,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	p->bts = NULL;
 
 	/* Perform scheduler related setup. Assign this task to a CPU. */
-	sched_fork(p, clone_flags);
+	sched_fork(p, clone_flags);  // 设置进程为TASK_RUNNING,防止被调度
 
 	retval = perf_event_init_task(p);
 	if (retval)
@@ -1150,6 +1153,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	if ((retval = audit_alloc(p)))
 		goto bad_fork_cleanup_policy;
 	/* copy all the process information */
+    // copy_xxx 复制或共享父进程的资源
 	if ((retval = copy_semundo(clone_flags, p)))
 		goto bad_fork_cleanup_audit;
 	if ((retval = copy_files(clone_flags, p)))
@@ -1183,10 +1187,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		}
 	}
 
-	p->pid = pid_nr(pid);
-	p->tgid = p->pid;
+	p->pid = pid_nr(pid);               // 获取新进程全局id
+	p->tgid = p->pid;                   // 如果不是创建线程,线程组的id为进程id
 	if (clone_flags & CLONE_THREAD)
-		p->tgid = current->tgid;
+		p->tgid = current->tgid;        // 如果是创建线程,线程组的id为分支线程的tid
 
 	if (current->nsproxy != p->nsproxy) {
 		retval = ns_cgroup_clone(p, pid);
@@ -1245,9 +1249,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	write_lock_irq(&tasklist_lock);
 
 	/* CLONE_PARENT re-uses the old parent */
+    // 如果是创建线程,新线程的父进程是分支线程的父进程(即父进程和原来的相同)
 	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
 		p->real_parent = current->real_parent;
 		p->parent_exec_id = current->parent_exec_id;
+    // 如果不是创建线程,则父进程就是当前线程
 	} else {
 		p->real_parent = current;
 		p->parent_exec_id = current->self_exec_id;
@@ -1274,7 +1280,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	if (clone_flags & CLONE_THREAD) {
 		atomic_inc(&current->signal->count);
 		atomic_inc(&current->signal->live);
-		p->group_leader = current->group_leader;	// 重设其group_leader
+		p->group_leader = current->group_leader;	// 修正其group_leader
 		list_add_tail_rcu(&p->thread_group, &p->group_leader->thread_group);
 	}
 
@@ -1282,7 +1288,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		list_add_tail(&p->sibling, &p->real_parent->children);
 		tracehook_finish_clone(p, clone_flags, trace);
 
-		// 线程组长
 		if (thread_group_leader(p)) {
 			if (clone_flags & CLONE_NEWPID)
 				// init process

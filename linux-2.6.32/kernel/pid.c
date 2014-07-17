@@ -345,6 +345,7 @@ EXPORT_SYMBOL_GPL(find_vpid);
 /*
  * attach_pid() must be called with the tasklist_lock write-held.
  */
+// 将进程struct task_struct加入pid->tasks[]中
 void attach_pid(struct task_struct *task, enum pid_type type,
         struct pid *pid)
 {
