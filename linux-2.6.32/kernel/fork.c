@@ -1288,6 +1288,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		list_add_tail(&p->sibling, &p->real_parent->children);
 		tracehook_finish_clone(p, clone_flags, trace);
 
+        // 检查进程是否是线程组组长,如果是组长说明它真是一个进程
+        // 需要加入进程id体系
 		if (thread_group_leader(p)) {
 			if (clone_flags & CLONE_NEWPID)
 				// init process

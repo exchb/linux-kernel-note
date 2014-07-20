@@ -1233,6 +1233,7 @@ struct task_struct {
 #endif
 #endif
 
+    // static_prio静态优先级,可以nice
 	int prio, static_prio, normal_prio;
 	unsigned int rt_priority;
 	const struct sched_class *sched_class;

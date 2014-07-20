@@ -127,7 +127,7 @@ struct task_struct *kthread_create(int (*threadfn)(void *data),
 	list_add_tail(&create.list, &kthread_create_list);
 	spin_unlock(&kthread_create_lock);
 
-	wake_up_process(kthreadd_task);
+	wake_up_process(kthreadd_task);                    // 创建成功启动线程
 	wait_for_completion(&create.done);
 
 	if (!IS_ERR(create.result)) {

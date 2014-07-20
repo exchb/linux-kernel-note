@@ -1198,14 +1198,16 @@ int prepare_binprm(struct linux_binprm *bprm)
 		return -EACCES;
 
 	/* clear any previous set[ug]id data from a previous binary */
+    // effective euid
 	bprm->cred->euid = current_euid();
 	bprm->cred->egid = current_egid();
 
+    // 判断SUID位(mnt_nosuid为文件系统标志...)
 	if (!(bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)) {
 		/* Set-uid? */
 		if (mode & S_ISUID) {
 			bprm->per_clear |= PER_CLEAR_ON_SETID;
-			bprm->cred->euid = inode->i_uid;
+			bprm->cred->euid = inode->i_uid;   // 如果有suid,则有效id同inode(suid表示和文件所有者有一样的权限)
 		}
 
 		/* Set-gid? */
@@ -1398,6 +1400,7 @@ int do_execve(char * filename,
 	bprm->filename = filename;
 	bprm->interp = filename;
 
+    // 建立初始的栈
 	retval = bprm_mm_init(bprm);
 	if (retval)
 		goto out_file;
@@ -1410,6 +1413,7 @@ int do_execve(char * filename,
 	if ((retval = bprm->envc) < 0)
 		goto out;
 
+    // 提供父进程相关的值,如果没有suid/sgid,euid为父进程的euid
 	retval = prepare_binprm(bprm);
 	if (retval < 0)
 		goto out;
@@ -1428,6 +1432,7 @@ int do_execve(char * filename,
 		goto out;
 
 	current->flags &= ~PF_KTHREAD;
+    // 查找适用与该文件的二进制格式装载处理
 	retval = search_binary_handler(bprm,regs);
 	if (retval < 0)
 		goto out;

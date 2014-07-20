@@ -76,7 +76,7 @@ struct pid
     unsigned int level;                        // 命名空间层次深度
     /* lists of tasks that use this pid */
     // 使用该pid的进程列表
-    struct hlist_head tasks[PIDTYPE_MAX];      // tasks[PIDTYPE_PID] tasks[PIDTYPE_SID] ....
+    struct hlist_head tasks[PIDTYPE_MAX];      // tasks[PIDTYPE_PID] tasks[PIDTYPE_SID] (共享该pid的task)....
     struct rcu_head rcu;
     struct upid numbers[1];                    // 每个number对应一层namespace,用于取某进程在各个namespace的upid
 };
