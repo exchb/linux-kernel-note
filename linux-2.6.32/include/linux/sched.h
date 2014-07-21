@@ -1065,6 +1065,7 @@ struct sched_domain;
 #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
 #define WF_FORK		0x02		/* child wakeup after fork */
 
+// 调度器类
 struct sched_class {
 	const struct sched_class *next;
 
@@ -1135,11 +1136,12 @@ struct load_weight {
  *     4 se->sleep_start
  *     6 se->load.weight
  */
+// 调度实体
 struct sched_entity {
 	struct load_weight	load;		/* for load-balancing */
 	struct rb_node		run_node;
 	struct list_head	group_node;
-	unsigned int		on_rq;
+	unsigned int		on_rq;          // 是否在就绪队列上
 
 	u64			exec_start;
 	u64			sum_exec_runtime;
@@ -1258,7 +1260,7 @@ struct task_struct {
 	unsigned int btrace_seq;
 #endif
 
-	unsigned int policy;
+	unsigned int policy;                 // 对该进程的调度策略(SCHED_NORMAL等)
 	cpumask_t cpus_allowed;
 
 #ifdef CONFIG_TREE_PREEMPT_RCU

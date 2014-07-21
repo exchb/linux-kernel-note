@@ -118,14 +118,14 @@
  * single value that denotes runtime == period, ie unlimited time.
  */
 #define RUNTIME_INF	((u64)~0ULL)
-
+// 判断进程是否为实时类
 static inline int rt_policy(int policy)
 {
 	if (unlikely(policy == SCHED_FIFO || policy == SCHED_RR))
 		return 1;
 	return 0;
 }
-
+// 取进程的policy
 static inline int task_has_rt_policy(struct task_struct *p)
 {
 	return rt_policy(p->policy);
@@ -481,6 +481,7 @@ static struct root_domain def_root_domain;
  * (such as the load balancing or the thread migration code), lock
  * acquire operations must be ordered by ascending &runqueue.
  */
+// 就绪队列
 struct rq {
 	/* runqueue lock: */
 	spinlock_t lock;
@@ -489,7 +490,7 @@ struct rq {
 	 * nr_running and cpu_load should be in the same cacheline because
 	 * remote CPUs use both these fields when doing load calculation.
 	 */
-	unsigned long nr_running;
+	unsigned long nr_running;                  // 队列上可运行进程的数目
 	#define CPU_LOAD_IDX_MAX 5
 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
 #ifdef CONFIG_NO_HZ
@@ -501,8 +502,8 @@ struct rq {
 	unsigned long nr_load_updates;
 	u64 nr_switches;
 
-	struct cfs_rq cfs;
-	struct rt_rq rt;
+	struct cfs_rq cfs;                         // 公平调度器
+	struct rt_rq rt;                           // 实时调度器
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	/* list of leaf cfs_rq on this cpu: */
@@ -2005,10 +2006,10 @@ static inline int normal_prio(struct task_struct *p)
 {
 	int prio;
 
-	if (task_has_rt_policy(p))
+	if (task_has_rt_policy(p))                        // 实时进程
 		prio = MAX_RT_PRIO-1 - p->rt_priority;
 	else
-		prio = __normal_prio(p);
+		prio = __normal_prio(p);                      // 非实时进程.normal_prio == static_prio
 	return prio;
 }
 
