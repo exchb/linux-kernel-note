@@ -2151,6 +2151,7 @@ unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task)
 /*
  * All the scheduling class methods:
  */
+// CFS 实现,即调度类给出相应的函数
 static const struct sched_class fair_sched_class = {
 	.next			= &idle_sched_class,
 	.enqueue_task		= enqueue_task_fair,
