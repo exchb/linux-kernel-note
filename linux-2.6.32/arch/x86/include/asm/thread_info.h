@@ -178,10 +178,11 @@ struct thread_info {
 register unsigned long current_stack_pointer asm("esp") __used;
 
 /* how to get the thread information struct from C */
+// 相当与esp - THREAD_SIZE
 static inline struct thread_info *current_thread_info(void)
 {
 	return (struct thread_info *)
-		(current_stack_pointer & ~(THREAD_SIZE - 1));
+		(current_stack_pointer & ~(THREAD_SIZE - 1));   // ~(THREAD_SIZE - 1) == 0xffffe000
 }
 
 #else /* !__ASSEMBLY__ */

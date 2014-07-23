@@ -5738,7 +5738,7 @@ asmlinkage void __sched schedule(void)
 	int cpu;
 
 need_resched:
-	preempt_disable();
+	preempt_disable();          // 禁止抢占
 	cpu = smp_processor_id();
 	rq = cpu_rq(cpu);
 	rcu_sched_qs(cpu);

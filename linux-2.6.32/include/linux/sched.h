@@ -1239,7 +1239,7 @@ struct task_struct {
 	int prio, static_prio, normal_prio;
 	unsigned int rt_priority;
 	const struct sched_class *sched_class;
-	struct sched_entity se;
+	struct sched_entity se;                     // 在task_struct中内嵌的调度实体
 	struct sched_rt_entity rt;
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
@@ -1261,7 +1261,7 @@ struct task_struct {
 #endif
 
 	unsigned int policy;                 // 对该进程的调度策略(SCHED_NORMAL等)
-	cpumask_t cpus_allowed;
+	cpumask_t cpus_allowed;              // 限制进程在哪些cpu上运行
 
 #ifdef CONFIG_TREE_PREEMPT_RCU
 	int rcu_read_lock_nesting;
