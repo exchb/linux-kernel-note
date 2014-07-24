@@ -1065,7 +1065,7 @@ struct sched_domain;
 #define WF_SYNC		0x01		/* waker goes to sleep after wakup */
 #define WF_FORK		0x02		/* child wakeup after fork */
 
-// 调度器类
+// 调度器类,捆绑了一系列调度操作
 struct sched_class {
 	const struct sched_class *next;
 
@@ -1138,13 +1138,13 @@ struct load_weight {
  */
 // 调度实体
 struct sched_entity {
-	struct load_weight	load;		/* for load-balancing */
-	struct rb_node		run_node;
+	struct load_weight	load;		/* for load-balancing 负载均衡 */
+	struct rb_node		run_node;       // rbtree节点,供调度排序
 	struct list_head	group_node;
 	unsigned int		on_rq;          // 是否在就绪队列上
 
 	u64			exec_start;
-	u64			sum_exec_runtime;
+	u64			sum_exec_runtime;       // 记录消耗的cpu时间
 	u64			vruntime;
 	u64			prev_sum_exec_runtime;
 
@@ -1574,7 +1574,7 @@ struct task_struct {
  * MAX_RT_PRIO must not be smaller than MAX_USER_RT_PRIO.
  */
 
-#define MAX_USER_RT_PRIO	100
+#define MAX_USER_RT_PRIO	100                  // 实时进程的最大优先级
 #define MAX_RT_PRIO		MAX_USER_RT_PRIO
 
 #define MAX_PRIO		(MAX_RT_PRIO + 40)

@@ -2160,7 +2160,7 @@ static const struct sched_class fair_sched_class = {
 
 	.check_preempt_curr	= check_preempt_wakeup,
 
-	.pick_next_task		= pick_next_task_fair,
+	.pick_next_task		= pick_next_task_fair,                // 选择下一个调度进程
 	.put_prev_task		= put_prev_task_fair,
 
 #ifdef CONFIG_SMP

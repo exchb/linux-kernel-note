@@ -498,10 +498,11 @@ struct rq {
 	unsigned char in_nohz_recently;
 #endif
 	/* capture load from *all* tasks on this cpu: */
-	struct load_weight load;
+	struct load_weight load;                   // 当前负荷状态(虚拟时钟基于它)
 	unsigned long nr_load_updates;
 	u64 nr_switches;
 
+    // 嵌入的子就绪队列
 	struct cfs_rq cfs;                         // 公平调度器
 	struct rt_rq rt;                           // 实时调度器
 
@@ -521,10 +522,11 @@ struct rq {
 	 */
 	unsigned long nr_uninterruptible;
 
-	struct task_struct *curr, *idle;
+	struct task_struct *curr, *idle;           // curr是当前运行进程,idle是指的idle进程 (什么是idle进程?)
 	unsigned long next_balance;
 	struct mm_struct *prev_mm;
 
+    // 实现就绪队列自身的时钟
 	u64 clock;
 	u64 clock_task;
 
@@ -595,6 +597,7 @@ struct rq {
 #endif
 };
 
+// 一个runqueues数组,每一个元素代表一个cpu,对应一个就绪队列
 static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
 
 static void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags);
