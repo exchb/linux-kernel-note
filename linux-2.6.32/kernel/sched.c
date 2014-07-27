@@ -85,7 +85,7 @@
  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
  * and back.
  */
-#define NICE_TO_PRIO(nice)	(MAX_RT_PRIO + (nice) + 20)
+#define NICE_TO_PRIO(nice)	(MAX_RT_PRIO + (nice) + 20)     // for static_prio
 #define PRIO_TO_NICE(prio)	((prio) - MAX_RT_PRIO - 20)
 #define TASK_NICE(p)		PRIO_TO_NICE((p)->static_prio)
 
@@ -2025,7 +2025,7 @@ static inline int normal_prio(struct task_struct *p)
  */
 static int effective_prio(struct task_struct *p)
 {
-	p->normal_prio = normal_prio(p);
+	p->normal_prio = normal_prio(p);              // 非实时进程.normal_prio == static_prio
 	/*
 	 * If we are RT tasks or we were boosted to RT priority,
 	 * keep the priority unchanged. Otherwise, update priority
@@ -2059,7 +2059,7 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int sleep)
 	dequeue_task(rq, p, sleep);
 	dec_nr_running(rq);
 }
-
+手动
 /**
  * task_curr - is this task currently executing on a CPU?
  * @p: the task in question.
@@ -6494,6 +6494,7 @@ struct task_struct *idle_task(int cpu)
  * find_process_by_pid - find a process with a matching PID value.
  * @pid: the pid in question.
  */
+// 用current的namespace和pid找task_struct
 static struct task_struct *find_process_by_pid(pid_t pid)
 {
 	return pid ? find_task_by_vpid(pid) : current;

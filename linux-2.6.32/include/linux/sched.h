@@ -1072,7 +1072,7 @@ struct sched_class {
 	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int wakeup,
 			      bool head);
 	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int sleep);
-	void (*yield_task) (struct rq *rq);
+	void (*yield_task) (struct rq *rq);                                     // 手动放弃对处理器的控制
 
 	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
 
