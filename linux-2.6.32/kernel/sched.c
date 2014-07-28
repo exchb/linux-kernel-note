@@ -351,8 +351,8 @@ struct cfs_rq {
 	u64 exec_clock;
 	u64 min_vruntime;
 
-	struct rb_root tasks_timeline;
-	struct rb_node *rb_leftmost;
+	struct rb_root tasks_timeline;              // rbt root
+	struct rb_node *rb_leftmost;                // rbt left
 
 	struct list_head tasks;
 	struct list_head *balance_iterator;
