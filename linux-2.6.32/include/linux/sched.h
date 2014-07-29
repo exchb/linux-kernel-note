@@ -1122,8 +1122,9 @@ struct sched_class {
 #endif
 };
 
+// 负荷权重 (prio_to_weight)
 struct load_weight {
-	unsigned long weight, inv_weight;
+	unsigned long weight, inv_weight;          // weight为权重,inv_weight为了方便计算的一个值
 };
 
 /*

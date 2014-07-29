@@ -1937,7 +1937,7 @@ static void dec_nr_running(struct rq *rq)
 static void set_load_weight(struct task_struct *p)
 {
 	if (task_has_rt_policy(p)) {
-		p->se.load.weight = 0;
+		p->se.load.weight = 0;                  // 实时进程的负重为0?
 		p->se.load.inv_weight = WMULT_CONST;
 		return;
 	}
@@ -1951,7 +1951,7 @@ static void set_load_weight(struct task_struct *p)
 		return;
 	}
 
-	p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];
+	p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];    // 对普通进程 prio_to_weight[nice]
 	p->se.load.inv_weight = prio_to_wmult[p->static_prio - MAX_RT_PRIO];
 }
 
@@ -5547,14 +5547,14 @@ inline cputime_t task_gtime(struct task_struct *p)
  */
 void scheduler_tick(void)
 {
-	int cpu = smp_processor_id();
+	int cpu = smp_processor_id();         // 当前处理器的id
 	struct rq *rq = cpu_rq(cpu);
 	struct task_struct *curr = rq->curr;
 
 	sched_clock_tick();
 
 	spin_lock(&rq->lock);
-	update_rq_clock(rq);
+	update_rq_clock(rq);                  // 就绪队列的时钟更新
 	update_cpu_load(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
 	spin_unlock(&rq->lock);
