@@ -990,7 +990,7 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
 #endif
 
 	if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
-		check_preempt_tick(cfs_rq, curr);
+		check_preempt_tick(cfs_rq, curr);                        // 判断是否需要抢占当前进程
 }
 
 /**************************************************
