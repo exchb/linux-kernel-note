@@ -5733,6 +5733,7 @@ pick_next_task(struct rq *rq)
 /*
  * schedule() is the main scheduler function.
  */
+// 主调度器函数
 asmlinkage void __sched schedule(void)
 {
 	struct task_struct *prev, *next;
@@ -5742,10 +5743,10 @@ asmlinkage void __sched schedule(void)
 
 need_resched:
 	preempt_disable();          // 禁止抢占
-	cpu = smp_processor_id();
+	cpu = smp_processor_id();   // 当前处理器编号
 	rq = cpu_rq(cpu);
 	rcu_sched_qs(cpu);
-	prev = rq->curr;
+	prev = rq->curr;            // 记录当前活动进程的task_struct
 	switch_count = &prev->nivcsw;
 
 	release_kernel_lock(prev);	// 保证prev不占用大内核锁
@@ -5759,13 +5760,14 @@ need_resched_nonpreemptible:
 
 	spin_lock_irq(&rq->lock);
 	update_rq_clock(rq);
-	clear_tsk_need_resched(prev);
+	clear_tsk_need_resched(prev);    // 清除TIF_NEED_RESCHED(表示进程需要调用调度程序执行切换)
 
+    // 如果内核未被抢占,且可以抢占
 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-		if (unlikely(signal_pending_state(prev->state, prev)))
-			prev->state = TASK_RUNNING;
+		if (unlikely(signal_pending_state(prev->state, prev)))     // 如果当前进程有非阻塞等待信号,并且为TASK_INTERRUPTIBLE
+			prev->state = TASK_RUNNING;                            // 再次提升为运行进程
 		else
-			deactivate_task(rq, prev, 1);
+			deactivate_task(rq, prev, 1);                          // 停止该进程活动
 		switch_count = &prev->nvcsw;
 	}
 
@@ -5775,10 +5777,11 @@ need_resched_nonpreemptible:
 	if (unlikely(!rq->nr_running))
 		idle_balance(cpu, rq);	// attempts to pull task from other cpus
 
-	put_prev_task(rq, prev);
+	put_prev_task(rq, prev);    // 将进程放回队列?
 	next = pick_next_task(rq);	// 选择下一个最合适运行的进程
 								// 内部保证了rt进程优先
 
+    // 不一定要选择一个新进程,如果其他进程都在sleep,prev自然还在运行
 	if (likely(prev != next)) {
 		sched_info_switch(prev, next);	// sched_info统计相关
 		perf_event_task_sched_out(prev, next, cpu);
@@ -5787,7 +5790,7 @@ need_resched_nonpreemptible:
 		rq->curr = next;
 		++*switch_count;
 
-		// 建立next的地址空间
+		// 建立next的地址空间  上下文切换
 		context_switch(rq, prev, next); /* unlocks the rq */
 		/*
 		 * the context switch might have flipped the stack from under
