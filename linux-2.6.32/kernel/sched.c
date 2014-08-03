@@ -3041,7 +3041,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
 		atomic_inc(&oldmm->mm_count);
 		enter_lazy_tlb(oldmm, next);	// 设置懒惰TLB模式
 	} else
-		switch_mm(oldmm, mm, next);	// 替换地址空间
+		switch_mm(oldmm, mm, next);	// 替换地址空间(用户空间)
 	if (unlikely(!prev->mm)) {	// 说明prev是内核线程，或者prev正在退出
 		prev->active_mm = NULL;
 		rq->prev_mm = oldmm;
