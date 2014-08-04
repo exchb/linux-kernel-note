@@ -5733,7 +5733,8 @@ pick_next_task(struct rq *rq)
 /*
  * schedule() is the main scheduler function.
  */
-// 主调度器函数
+// 主调度器函数,在cpu需要分配给另外进程时调用
+// 当从系统调用返回之后,内核会检查TIF_NEED_RESCHED,替换当前进程
 asmlinkage void __sched schedule(void)
 {
 	struct task_struct *prev, *next;

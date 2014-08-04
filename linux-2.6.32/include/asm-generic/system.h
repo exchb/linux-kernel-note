@@ -25,6 +25,7 @@
 struct task_struct;
 
 /* context switching is now performed out-of-line in switch_to.S */
+// arch/x86/include/asm/system.h
 extern struct task_struct *__switch_to(struct task_struct *,
 		struct task_struct *);
 #define switch_to(prev, next, last)					\
