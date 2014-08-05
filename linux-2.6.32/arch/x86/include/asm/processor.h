@@ -197,8 +197,8 @@ static inline void load_cr3(pgd_t *pgdir)
 /* This is the TSS defined by the hardware. */
 struct x86_hw_tss {
 	unsigned short		back_link, __blh;
-	unsigned long		sp0;
-	unsigned short		ss0, __ss0h;
+	unsigned long		sp0;                    // 内核栈指针
+	unsigned short		ss0, __ss0h;            // 内核栈段描述符
 	unsigned long		sp1;
 	/* ss1 caches MSR_IA32_SYSENTER_CS: */
 	unsigned short		ss1, __ss1h;
@@ -211,7 +211,7 @@ struct x86_hw_tss {
 	unsigned long		cx;
 	unsigned long		dx;
 	unsigned long		bx;
-	unsigned long		sp;
+	unsigned long		sp;                      // 当前进程用户态指针?
 	unsigned long		bp;
 	unsigned long		si;
 	unsigned long		di;
@@ -253,7 +253,7 @@ struct x86_hw_tss {
 
 struct tss_struct {
 	/*
-	 * The hardware state:
+	 * The hardware state:  硬件状态结构
 	 */
 	struct x86_hw_tss	x86_tss;
 
