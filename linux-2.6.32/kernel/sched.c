@@ -5802,6 +5802,7 @@ need_resched_nonpreemptible:
 	} else
 		spin_unlock_irq(&rq->lock);
 
+    // 如果已经执行了上下文切换,那么下面这一段在新进程执行
 	post_schedule(rq);
 
 	if (unlikely(reacquire_kernel_lock(current) < 0))
