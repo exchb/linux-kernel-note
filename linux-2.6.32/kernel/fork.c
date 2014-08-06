@@ -250,7 +250,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 	if (err)
 		goto out;
 
-	setup_thread_stack(tsk, orig);          // 设置stack的布局...(what it is?)
+	setup_thread_stack(tsk, orig);          // 复制orig到thread_info,然后将thread_info(tsk)->task 指向tsk
 	stackend = end_of_stack(tsk);
 	*stackend = STACK_END_MAGIC;	/* for overflow detection 栈声明为数组，正向。栈的使用是倒向 */
 
@@ -1385,7 +1385,7 @@ struct task_struct * __cpuinit fork_idle(int cpu)
 // arch/x86/kernel/process.c
 // int sys_fork()
 // return do_fork(SIGCHLD,regs.esp,&regs,0,NULL,NULL)
-// 起始地址在esp中保存
+// regs.esp 是用户态栈指针
 long do_fork(unsigned long clone_flags,
 	      unsigned long stack_start,
 	      struct pt_regs *regs,
