@@ -64,7 +64,7 @@ do {									\
 		     "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */	\
 		     "pushl %[next_ip]\n\t"	/* restore EIP   */	\
 		     __switch_canary					\
-		     "jmp __switch_to\n"	/* regparm call  */	\
+		     "jmp __switch_to\n"	/* regparm call  */	\      // arch/x86/kernel/process_32.c
 		     "1:\t"						\
 		     "popl %%ebp\n\t"		/* restore EBP   */	\
 		     "popfl\n"			/* restore flags */	\

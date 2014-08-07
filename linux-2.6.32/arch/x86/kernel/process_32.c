@@ -344,8 +344,8 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 {
 	struct thread_struct *prev = &prev_p->thread,
 				 *next = &next_p->thread;
-	int cpu = smp_processor_id();
-	struct tss_struct *tss = &per_cpu(init_tss, cpu);
+	int cpu = smp_processor_id();                               // 当前cpu的编号
+	struct tss_struct *tss = &per_cpu(init_tss, cpu);           // 当前cpu的tss
 	bool preload_fpu;
 
 	/* never put a printk in __switch_to... printk() calls wake_up*() indirectly */
@@ -366,7 +366,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 	/*
 	 * Reload esp0.
 	 */
-	load_sp0(tss, next);
+	load_sp0(tss, next);     // init_tss[cpu].esp0 = next_p->thread.esp0
 
 	/*
 	 * Save away %gs. No need to save %fs, as it was saved on the
