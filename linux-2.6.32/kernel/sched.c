@@ -3071,7 +3071,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
 	 *	被替换出去的那个进程
 	 */
 
-	barrier();
+	barrier();    // 保证switch_to 和 finish_task_switch顺序不会切换
 	/*
 	 * this_rq must be evaluated again because prev may have moved
 	 * CPUs since it called schedule(), thus the 'rq' on its stack
@@ -5803,6 +5803,7 @@ need_resched_nonpreemptible:
 		spin_unlock_irq(&rq->lock);
 
     // 如果已经执行了上下文切换,那么下面这一段在新进程执行
+    // 但如果prew再次被调度,也会在这儿进行
 	post_schedule(rq);
 
 	if (unlikely(reacquire_kernel_lock(current) < 0))

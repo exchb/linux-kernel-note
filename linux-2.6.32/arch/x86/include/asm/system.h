@@ -44,6 +44,8 @@ void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
  * Saving eflags is important. It switches not only IOPL between tasks,
  * it also protects other tasks from NT leaking through sysenter etc.
  */
+// 调用方法 prev,next,prev
+// 这个宏返回后prew是上一个执行的进程,跟入参的prev可能有区别
 #define switch_to(prev, next, last)					\
 do {									\
 	/*								\
