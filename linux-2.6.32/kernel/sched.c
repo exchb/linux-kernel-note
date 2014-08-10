@@ -1332,6 +1332,7 @@ calc_delta_mine(unsigned long delta_exec, unsigned long weight,
 	else
 		tmp = SRR(tmp * lw->inv_weight, WMULT_SHIFT);
 	// 如上操作是计算 (调度周期*进程权重)/进程总权重
+    // 权重值越小,优先级越大,calc_delta_mine返回越少
 
 	return (unsigned long)min(tmp, (u64)(unsigned long)LONG_MAX);
 }
@@ -2711,12 +2712,13 @@ static void __sched_fork(struct task_struct *p)
 
 /*
  * fork()/clone()-time setup:
+ * 在fork -> copy_process 里面触发
  */
 void sched_fork(struct task_struct *p, int clone_flags)
 {
 	int cpu = get_cpu();
 
-	__sched_fork(p);
+	__sched_fork(p);       // 初始化调度实体
 	/*
 	 * We mark the process as running here. This guarantees that
 	 * nobody will actually run it, and a signal or other external
@@ -2726,6 +2728,7 @@ void sched_fork(struct task_struct *p, int clone_flags)
 
 	/*
 	 * Revert to default priority/policy on fork if requested.
+     * 如果设置了sched_reset_on_fork,调度方式回到SCHED_NORMAL
 	 */
 	if (unlikely(p->sched_reset_on_fork)) {
 		if (p->policy == SCHED_FIFO || p->policy == SCHED_RR) {
@@ -2733,7 +2736,7 @@ void sched_fork(struct task_struct *p, int clone_flags)
 			p->normal_prio = p->static_prio;
 		}
 
-		if (PRIO_TO_NICE(p->static_prio) < 0) {	// 高优先级,但不是实时进程
+		if (PRIO_TO_NICE(p->static_prio) < 0) {	// 高优先级,但不是实时进程(PRIO_TO_NICE回到了nice值-20 -- 19)
 			p->static_prio = NICE_TO_PRIO(0);
 			p->normal_prio = p->static_prio;
 			set_load_weight(p);

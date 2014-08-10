@@ -1144,9 +1144,9 @@ struct sched_entity {
 	struct list_head	group_node;
 	unsigned int		on_rq;          // 是否在就绪队列上
 
-	u64			exec_start;
-	u64			sum_exec_runtime;       // 记录消耗的cpu时间
-	u64			vruntime;
+	u64			exec_start;             // 进程最近被调度到的开始执行时间
+	u64			sum_exec_runtime;       // 记录消耗的物理cpu时间
+	u64			vruntime;               // 虚拟运行时间,总是选择最小的..rbt->left
 	u64			prev_sum_exec_runtime;
 
 	u64			last_wakeup;
@@ -1173,7 +1173,7 @@ struct sched_entity {
 
 	u64			block_start;
 	u64			block_max;
-	u64			exec_max;
+	u64			exec_max;                // 最长单次执行时间
 	u64			slice_max;
 
 	u64			nr_migrations_cold;

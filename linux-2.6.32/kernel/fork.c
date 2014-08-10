@@ -1144,7 +1144,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	p->bts = NULL;
 
 	/* Perform scheduler related setup. Assign this task to a CPU. */
-	sched_fork(p, clone_flags);  // 设置进程为TASK_RUNNING,防止被调度
+	sched_fork(p, clone_flags);  // 设置进程为TASK_RUNNING,防止被调度(sched.c)
 
 	retval = perf_event_init_task(p);
 	if (retval)

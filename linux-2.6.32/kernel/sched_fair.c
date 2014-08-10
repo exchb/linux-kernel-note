@@ -322,7 +322,7 @@ static void __enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
 	struct rb_node **link = &cfs_rq->tasks_timeline.rb_node;
 	struct rb_node *parent = NULL;
 	struct sched_entity *entry;
-	s64 key = entity_key(cfs_rq, se);
+	s64 key = entity_key(cfs_rq, se);       // se->vruntime - cfs_rq->min_vruntime
 	int leftmost = 1;
 
 	/*
@@ -409,10 +409,13 @@ int sched_nr_latency_handler(struct ctl_table *table, int write,
 
 /*
  * delta /= w
+ *
+ * 虚拟时间的的计算
  */
 static inline unsigned long
 calc_delta_fair(unsigned long delta, struct sched_entity *se)
 {
+    // 如果nice不为0 . 按当前的load和nice为0的load比例进行缩减
 	if (unlikely(se->load.weight != NICE_0_LOAD))
 		delta = calc_delta_mine(delta, NICE_0_LOAD, &se->load);
 
@@ -501,9 +504,11 @@ __update_curr(struct cfs_rq *cfs_rq, struct sched_entity *curr,
 
 	curr->sum_exec_runtime += delta_exec;
 	// delta_exec = now(cfs_rq->clock_task) - curr->exec_start
-	schedstat_add(cfs_rq, exec_clock, delta_exec);
+	schedstat_add(cfs_rq, exec_clock, delta_exec);             // cfs_rq->exec_clock += delta_exec
 	delta_exec_weighted = calc_delta_fair(delta_exec, curr);
 
+    // 如果nice不为0 delta_exec_weighted = delta_exec * NICE_0_LOAD/se.weight
+    // 如果nice为0   delta_exec_weighted = delta_exec
 	curr->vruntime += delta_exec_weighted;
 	update_min_vruntime(cfs_rq);
 }
@@ -514,6 +519,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	u64 now = rq_of(cfs_rq)->clock_task;
 	unsigned long delta_exec;
 
+    // 如果就绪队列上没有进程,就返回....(这也可以)
 	if (unlikely(!curr))
 		return;
 
@@ -522,7 +528,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	 * since the last time we changed load (this cannot
 	 * overflow on 32 bits):
 	 */
-	delta_exec = (unsigned long)(now - curr->exec_start);
+	delta_exec = (unsigned long)(now - curr->exec_start);     // exec_start,进程最近被调度的开始执行时间
 	if (!delta_exec)
 		return;
 
@@ -728,7 +734,7 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 	 * little, place the new task so that it fits in the slot that
 	 * stays open at the end.
 	 */
-	// 新进程乳队
+	// 新进程入队
 	if (initial && sched_feat(START_DEBIT))
 		//sched_vslice = (调度周期 * 进程权重 / 所有进程总权重) * NICE_0_LOAD / 进程权重
 		vruntime += sched_vslice(cfs_rq, se);
@@ -2022,6 +2028,7 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
  * called on fork with the child task as argument from the parent's context
  *  - child not yet on the tasklist
  *  - preemption disabled
+ *  fork->copy_process->task_fork
  */
 static void task_fork_fair(struct task_struct *p)
 {
@@ -2033,7 +2040,7 @@ static void task_fork_fair(struct task_struct *p)
 
 	spin_lock_irqsave(&rq->lock, flags);
 
-	update_rq_clock(rq);
+	update_rq_clock(rq);             // 更新rq的时钟(rq->clock_task,rq->clock)
 
 	if (unlikely(task_cpu(p) != this_cpu)) {
 		rcu_read_lock();
@@ -2041,10 +2048,10 @@ static void task_fork_fair(struct task_struct *p)
 		rcu_read_unlock();
 	}
 
-	update_curr(cfs_rq);
+	update_curr(cfs_rq);            // 更新current.vruntime以及调度实体一些值
 
 	if (curr)
-		se->vruntime = curr->vruntime;
+		se->vruntime = curr->vruntime;   // se是child的调度实体,curr是当前进程(在task_fork_fair时候未上下文切换)
 	place_entity(cfs_rq, se, 1);	// se的vruntime被增加
 
 	if (sysctl_sched_child_runs_first && curr && entity_before(curr, se)) {
