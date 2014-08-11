@@ -736,7 +736,8 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 	 */
 	// 新进程入队
 	if (initial && sched_feat(START_DEBIT))
-		//sched_vslice = (调度周期 * 进程权重 / 所有进程总权重) * NICE_0_LOAD / 进程权重
+		// sched_vslice = (调度周期 * 进程权重 / 所有进程总权重) * NICE_0_LOAD / 进程权重
+        // 相当与在父进程的vruntime上再调度了一次,虽然没有实际调度...
 		vruntime += sched_vslice(cfs_rq, se);
 
 	/* sleeps up to a single latency don't count. */
@@ -2032,8 +2033,8 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
  */
 static void task_fork_fair(struct task_struct *p)
 {
-	struct cfs_rq *cfs_rq = task_cfs_rq(current);
-	struct sched_entity *se = &p->se, *curr = cfs_rq->curr;
+	struct cfs_rq *cfs_rq = task_cfs_rq(current);                // 注意是current不是p....
+	struct sched_entity *se = &p->se, *curr = cfs_rq->curr;      // se 是p的se....
 	int this_cpu = smp_processor_id();
 	struct rq *rq = this_rq();
 	unsigned long flags;
@@ -2054,13 +2055,14 @@ static void task_fork_fair(struct task_struct *p)
 		se->vruntime = curr->vruntime;   // se是child的调度实体,curr是当前进程(在task_fork_fair时候未上下文切换)
 	place_entity(cfs_rq, se, 1);	// se的vruntime被增加
 
+    // 如果设置了子进程先运行,则交换
 	if (sysctl_sched_child_runs_first && curr && entity_before(curr, se)) {
 		/*
 		 * Upon rescheduling, sched_class::put_prev_task() will place
 		 * 'current' within the tree based on its new key value.
 		 */
 		swap(curr->vruntime, se->vruntime);	// 交换p和current的vruntime，呼应第2030行
-		resched_task(rq->curr);
+		resched_task(rq->curr);             // 设置TIF_NEED_RESCHED
 	}
 
 	se->vruntime -= cfs_rq->min_vruntime;

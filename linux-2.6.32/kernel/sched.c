@@ -2712,7 +2712,7 @@ static void __sched_fork(struct task_struct *p)
 
 /*
  * fork()/clone()-time setup:
- * 在fork -> copy_process 里面触发
+ * 在fork -> copy_process 里面触发,将子进程加入调度
  */
 void sched_fork(struct task_struct *p, int clone_flags)
 {
@@ -2736,6 +2736,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
 			p->normal_prio = p->static_prio;
 		}
 
+        /* 如果父进程优先级高,子进程调整到0
+         * 若未调整,则父进程和子进程优先级相同
+         */
 		if (PRIO_TO_NICE(p->static_prio) < 0) {	// 高优先级,但不是实时进程(PRIO_TO_NICE回到了nice值-20 -- 19)
 			p->static_prio = NICE_TO_PRIO(0);
 			p->normal_prio = p->static_prio;
@@ -2754,10 +2757,11 @@ void sched_fork(struct task_struct *p, int clone_flags)
 	 */
 	p->prio = current->normal_prio;
 
-	// 非实时进程
+	// 非实时进程,使用cfs
 	if (!rt_prio(p->prio))
 		p->sched_class = &fair_sched_class;
 
+    // 调用task_fork,在cfs中更新vruntime什么的
 	if (p->sched_class->task_fork)
 		p->sched_class->task_fork(p);
 

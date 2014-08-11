@@ -1139,7 +1139,7 @@ struct load_weight {
  */
 // 调度实体
 struct sched_entity {
-	struct load_weight	load;		/* for load-balancing 负载均衡 */
+	struct load_weight	load;		/* for load-balancing 负载均衡.load正比与进程数量 */
 	struct rb_node		run_node;       // rbtree节点,供调度排序
 	struct list_head	group_node;
 	unsigned int		on_rq;          // 是否在就绪队列上
