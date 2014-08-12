@@ -344,6 +344,7 @@ static inline struct task_group *task_group(struct task_struct *p)
 #endif	/* CONFIG_CGROUP_SCHED */
 
 /* CFS-related fields in a runqueue */
+// 就绪队列的数据结构 嵌入在struct rq里面.struct rq在每一个cpu上一个
 struct cfs_rq {
 	struct load_weight load;
 	unsigned long nr_running;
@@ -481,7 +482,7 @@ static struct root_domain def_root_domain;
  * (such as the load balancing or the thread migration code), lock
  * acquire operations must be ordered by ascending &runqueue.
  */
-// 就绪队列
+// 就绪队列,每个cpu一个
 struct rq {
 	/* runqueue lock: */
 	spinlock_t lock;

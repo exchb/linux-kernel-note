@@ -502,7 +502,7 @@ __update_curr(struct cfs_rq *cfs_rq, struct sched_entity *curr,
 
 	schedstat_set(curr->exec_max, max((u64)delta_exec, curr->exec_max));
 
-	curr->sum_exec_runtime += delta_exec;
+	curr->sum_exec_runtime += delta_exec;                      // 更新物理cpu时间
 	// delta_exec = now(cfs_rq->clock_task) - curr->exec_start
 	schedstat_add(cfs_rq, exec_clock, delta_exec);             // cfs_rq->exec_clock += delta_exec
 	delta_exec_weighted = calc_delta_fair(delta_exec, curr);
@@ -1077,8 +1077,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int wakeup, bool head)
 	if (p->state == TASK_WAKING)
 		flags |= ENQUEUE_MIGRATE;
 
-	for_each_sched_entity(se) {
-		if (se->on_rq)
+	for_each_sched_entity(se) {         // 如果没有组调度,则退化为判断 if !se
+		if (se->on_rq)                  // 如果已在就绪队列上
 			break;
 		cfs_rq = cfs_rq_of(se);
 		enqueue_entity(cfs_rq, se, flags);
