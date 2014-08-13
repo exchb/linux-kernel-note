@@ -283,6 +283,7 @@ static inline int entity_before(struct sched_entity *a,
 	return (s64)(a->vruntime - b->vruntime) < 0;
 }
 
+// s64 : typedef signed long long 
 static inline s64 entity_key(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
 	return se->vruntime - cfs_rq->min_vruntime;
@@ -735,9 +736,13 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 	 * stays open at the end.
 	 */
 	// 新进程入队
+    // (在enqueue_task_fair中,initial为 0)
+    // 在task_fork_fair中 initial 为1
+    // 新进程和老进程的区别
 	if (initial && sched_feat(START_DEBIT))
 		// sched_vslice = (调度周期 * 进程权重 / 所有进程总权重) * NICE_0_LOAD / 进程权重
-        // 相当与在父进程的vruntime上再调度了一次,虽然没有实际调度...
+        // 加了一个调度延迟....,即至少在sched_vslice之后调度
+        // 防止进程一直fork,占据cpu
 		vruntime += sched_vslice(cfs_rq, se);
 
 	/* sleeps up to a single latency don't count. */
@@ -766,6 +771,10 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 	}
 
 	/* ensure we never gain time by being placed backwards. */
+    // 如果一个睡眠的进程本身有一个大的vruntime,绝不改小它....
+    // 如果睡眠时间比较短,se->vruntime > cfs_rq->min_vruntime,那么不用做任何更改,这个虚拟时间本来就有补偿
+    // 如果睡眠时间比较长,se->vruntime < cfs_rq->min_vruntime,那么在cfs_rq->min_vruntime上做一定的补偿
+    // 这么做是因为如果一个进程睡眠特别久,那么它起来之后,会占据cpu非常多的时间,实际上只需要给一个补偿就行
 	vruntime = max_vruntime(se->vruntime, vruntime);
 
 	se->vruntime = vruntime;
@@ -793,8 +802,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	update_curr(cfs_rq);
 	account_entity_enqueue(cfs_rq, se);	// into queue
 
+    // 如果进程刚刚被唤醒,那么得更新虚拟时间.如果进程以前在运行,就不用,因为?...
 	if (flags & ENQUEUE_WAKEUP) {
-		place_entity(cfs_rq, se, 0);	// 更新进程的vruntime值
+		place_entity(cfs_rq, se, 0);	// 更新进程的vruntime值,进行一些延迟操作
 		enqueue_sleeper(cfs_rq, se);
 	}
 
@@ -971,6 +981,7 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
 	cfs_rq->curr = NULL;
 }
 
+// 周期调度
 static void
 entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
 {
@@ -1827,7 +1838,7 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
 	struct cfs_rq *cfs_rq = &rq->cfs;
 	struct sched_entity *se;
 
-	if (unlikely(!cfs_rq->nr_running))
+	if (unlikely(!cfs_rq->nr_running))      // 如果可运行进程数目为0,则函数立即返回
 		return NULL;
 
 	do {
