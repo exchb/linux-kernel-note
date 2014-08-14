@@ -433,9 +433,16 @@ calc_delta_fair(unsigned long delta, struct sched_entity *se)
  */
 static u64 __sched_period(unsigned long nr_running)
 {
+    // sysctl_sched_latency 在 /proc/sys/kernel/sched_latency_ns配置
+    // 该值的含义是,保证没一个可运行进程都至少运行一次的时间间隔
 	u64 period = sysctl_sched_latency;
+
+    // sched_nr_latency 在/proc/sys/kernel/sched_min_granularity_ns 通过计算
+    // sched_nr_latency = sysctl_sched_latency / sched_min_granularity
+    // 表示一个延迟周期应该处理的进程数
 	unsigned long nr_latency = sched_nr_latency;
 
+    // 如果进程数比一个延迟周期大,则扩展周期
 	if (unlikely(nr_running > nr_latency)) {
 		period = sysctl_sched_min_granularity;
 		period *= nr_running;
@@ -449,11 +456,12 @@ static u64 __sched_period(unsigned long nr_running)
  * proportional(比例) to the weight.
  *
  * s = p*P[w/rw]
+ * 根据se的优先级,计算它在该周期分配的时间份额(vruntime)
  */
 static u64 sched_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
 	// 参数是nr_running的立刻要变成的值
-	// 返回值是所有进程运行一遍需要的总时间
+	// 返回值是所有进程运行一遍需要的总时间(按延迟跟踪的配置,计算的总时间)
 	u64 slice = __sched_period(cfs_rq->nr_running + !se->on_rq)
 
 	for_each_sched_entity(se) {
@@ -802,9 +810,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	update_curr(cfs_rq);
 	account_entity_enqueue(cfs_rq, se);	// into queue
 
-    // 如果进程刚刚被唤醒,那么得更新虚拟时间.如果进程以前在运行,就不用,因为?...
+    // 如果进程刚刚被唤醒,那么得更新虚拟时间.在睡眠的进程cfs从来没管过...
 	if (flags & ENQUEUE_WAKEUP) {
-		place_entity(cfs_rq, se, 0);	// 更新进程的vruntime值,进行一些延迟操作
+		place_entity(cfs_rq, se, 0);	// 为睡眠过的进程更新vruntime值
 		enqueue_sleeper(cfs_rq, se);
 	}
 
@@ -875,8 +883,10 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 {
 	unsigned long ideal_runtime, delta_exec;
 
-	ideal_runtime = sched_slice(cfs_rq, curr);
-	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+	ideal_runtime = sched_slice(cfs_rq, curr);                           // 计算进程在该延迟周期应该获取的时间
+	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;   // 计算进程已经执行的时间
+
+    // 如果进程已经执行的时间比应该获取的时间长,则抢占它
 	if (delta_exec > ideal_runtime) {
 		resched_task(rq_of(cfs_rq)->curr);
 		/*
@@ -895,9 +905,11 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 	if (!sched_feat(WAKEUP_PREEMPT))
 		return;
 
+    // 如果进程比最小运行长度还短,不抢占
 	if (delta_exec < sysctl_sched_min_granularity)
 		return;
 
+    // 如果红黑树最左边的进程vruntime比curr小,则也该抢占了....
 	if (cfs_rq->nr_running > 1) {
 		struct sched_entity *se = __pick_next_entity(cfs_rq);
 		s64 delta = curr->vruntime - se->vruntime;
@@ -949,6 +961,7 @@ static struct sched_entity *pick_next_entity(struct cfs_rq *cfs_rq)
 	struct sched_entity *se = __pick_next_entity(cfs_rq);
 	struct sched_entity *left = se;
 
+    // wakeup_preempt_entity检查是否可被抢占.
 	if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1)
 		se = cfs_rq->next;
 
@@ -1707,6 +1720,7 @@ wakeup_gran(struct sched_entity *curr, struct sched_entity *se)
  *  w(c, s3) =  1
  *
  */
+// 判断进程是否应该被抢占.
 static int
 wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se)
 {
@@ -1715,7 +1729,11 @@ wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se)
 	if (vdiff <= 0)
 		return -1;
 
-	// wakeup_gran调整切换阈值
+	// wakeup_gran按配置与否,调整切换阈值.
+    // 默认wakeup_gran的返回值为sysctl_sched_wakeup_granularity
+    // /proc/sys/kernel/sched_wakeup_granularity_ns
+    // 该值表示进程被唤醒后至少应该运行的时间数,这个值越小,发生抢占的几率也就越高
+    // 该值不代表最小执行时间sysctl_sched_min_granularity,仅用于判断是否该被抢占
 	gran = wakeup_gran(curr, se);
 	if (vdiff > gran)
 		return 1;
@@ -1741,6 +1759,7 @@ static void set_next_buddy(struct sched_entity *se)
 
 /*
  * Preempt the current task with a newly woken task if needed:
+ * 用一个新唤醒的进程抢占当前进程(比如子进程抢占父进程)
  */
 static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
 {
@@ -1752,7 +1771,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 
 	update_curr(cfs_rq);
 
-	// 被rt进程抢占
+	// 被rt进程抢占,那就直接抢占了
 	if (unlikely(rt_prio(p->prio))) {
 		resched_task(curr);
 		return;
@@ -1842,7 +1861,7 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
 		return NULL;
 
 	do {
-		se = pick_next_entity(cfs_rq);
+		se = pick_next_entity(cfs_rq);      // 提取红黑树最左边的进程
 		set_next_entity(cfs_rq, se);
 		cfs_rq = group_cfs_rq(se);
 	} while (cfs_rq);
