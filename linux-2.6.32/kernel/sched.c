@@ -500,7 +500,7 @@ struct rq {
 #endif
 	/* capture load from *all* tasks on this cpu: */
 	struct load_weight load;                   // 当前负荷状态(虚拟时钟基于它)
-	unsigned long nr_load_updates;
+	unsigned long nr_load_updates;             // 每次scheduler_tick调用update_cpu_load后加一,反馈cpu load 更新次数
 	u64 nr_switches;
 
     // 嵌入的子就绪队列
@@ -3231,12 +3231,15 @@ static void calc_load_account_active(struct rq *this_rq)
 // struct rq  ： 每个CPU一个运行队列
 static void update_cpu_load(struct rq *this_rq)
 {
-	unsigned long this_load = this_rq->load.weight;
+	unsigned long this_load = this_rq->load.weight;               // 当前该cpu的负载
 	int i, scale;
 
-	this_rq->nr_load_updates++;
+	this_rq->nr_load_updates++;                                   // load的次数
 
 	/* Update our load: */
+    // 对着CPU_LOAD_IDX_MAX 这5个等级的cpu_load[]更新
+    // cpu_load[]初始化为0
+    // scale 就是2的i次幂
 	for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
 		unsigned long old_load, new_load;
 
@@ -3250,8 +3253,14 @@ static void update_cpu_load(struct rq *this_rq)
 		 * example.
 		 */
 		if (new_load > old_load)
-			new_load += scale-1;
+			new_load += scale-1;                    // 如果运行队列load比cpu_load大.有一定补偿(why?)
 		// TODO: xxx
+        // i = 0 scale = 1: (old_load * 0 + new_load) / 1
+        // i = 1 scale = 2: (old_load * 1 + new_load) / 2
+        // i = 2 scale = 4: (old_load * 3 + new_load) / 4
+        // i = 3 scale = 8: (old_load * 7 + new_load) / 8
+        // i = 4 scale = 16:(old_load * 15 + new_load) / 16
+        // i越大,老的值影响也就越大
 		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
 	}
 
@@ -5553,6 +5562,7 @@ inline cputime_t task_gtime(struct task_struct *p)
  * It also gets called by the fork code, when changing the parent's
  * timeslices.
  */
+// timer_interrupt -> do_timer_interrupt_hook -> xxx -> scheduler_tick
 void scheduler_tick(void)
 {
 	int cpu = smp_processor_id();         // 当前处理器的id
@@ -5563,9 +5573,9 @@ void scheduler_tick(void)
 
 	spin_lock(&rq->lock);
 	update_rq_clock(rq);                  // 就绪队列的时钟更新
-	update_cpu_load(rq);
-	curr->sched_class->task_tick(rq, curr, 0);
-	spin_unlock(&rq->lock);
+	update_cpu_load(rq);                  // cpu负载更新 
+    curr->sched_class->task_tick(rq, curr, 0);
+    spin_unlock(&rq->lock);
 
 	perf_event_task_tick(curr, cpu);
 
