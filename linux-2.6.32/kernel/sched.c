@@ -2410,6 +2410,7 @@ static void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
 										// but: 和sched_class有什么关系?
 										// 目前只有两种调度类，意思rq->curr->sched_class不属于任何一种调度类
 										//		但是新进程属于两者之一，则标记rq->curr为需要重新调度?
+                                        //	大概意思是如果是实时进程,则立即抢占?
 				break;
 			}
 		}
@@ -2493,6 +2494,18 @@ int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_
  *
  * returns failure only if the task is already active.
  */
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief   把进程设置为TASK_RUNNING,插入rq
+ *
+ * @param p          被唤醒的进程p
+ * @param state      进程状态掩码(?)
+ * @param            wake_flags
+ *
+ * @returns   
+ */
+/* ----------------------------------------------------------------------------*/
 static int try_to_wake_up(struct task_struct *p, unsigned int state,
 			  int wake_flags)
 {
@@ -2538,7 +2551,7 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
 	if (p->sched_class->task_waking)
 		p->sched_class->task_waking(rq, p);
 
-	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);
+	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);   // balance
 	if (cpu != orig_cpu)
 		set_task_cpu(p, cpu);
 	__task_rq_unlock(rq);

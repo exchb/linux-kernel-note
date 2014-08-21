@@ -808,7 +808,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 * Update run-time statistics of the 'current'.
 	 */
 	update_curr(cfs_rq);
-	account_entity_enqueue(cfs_rq, se);	// into queue
+	account_entity_enqueue(cfs_rq, se);	// 更新cfs_rq的计数
 
     // 如果进程刚刚被唤醒,那么得更新虚拟时间.在睡眠的进程cfs从来没管过...
 	if (flags & ENQUEUE_WAKEUP) {
@@ -926,6 +926,8 @@ static void
 set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
 	/* 'current' is not kept within the tree. */
+    // 如果当前进程在就绪队列中,则先移除就绪队列,也就是从红黑树上移除
+    // 通过pick_next_task_fair调用该函数的时候,se已经不在就绪队列上了
 	if (se->on_rq) {
 		/*
 		 * Any task has to be enqueued before it get to execute on
@@ -936,7 +938,7 @@ set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
 		__dequeue_entity(cfs_rq, se);
 	}
 
-	update_stats_curr_start(cfs_rq, se);
+	update_stats_curr_start(cfs_rq, se);     // 设置se的exec_start为cfs_rq的时钟
 	cfs_rq->curr = se;
 #ifdef CONFIG_SCHEDSTATS
 	/*
@@ -995,6 +997,7 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
 }
 
 // 周期调度
+// scheduler_tick->task_tick->entity_tick
 static void
 entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
 {
@@ -1019,9 +1022,10 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
 			hrtimer_active(&rq_of(cfs_rq)->hrtick_timer))
 		return;
 #endif
-
+    
+    // 如果运行进程不止一个
 	if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
-		check_preempt_tick(cfs_rq, curr);                        // 判断是否需要抢占当前进程
+		check_preempt_tick(cfs_rq, curr);                        // 判断是否需要抢占当前进程,需要就设置TIF_NEED_RESCHED
 }
 
 /**************************************************
@@ -1771,7 +1775,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 
 	update_curr(cfs_rq);
 
-	// 被rt进程抢占,那就直接抢占了
+	// 被实时进程抢占,那就直接抢占了
 	if (unlikely(rt_prio(p->prio))) {
 		resched_task(curr);
 		return;
@@ -1833,6 +1837,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 
 	BUG_ON(!pse);
 
+    // 在这儿最终判断是否该被抢占,并且TIF_NEED_RESCHED
 	if (wakeup_preempt_entity(se, pse) == 1) {
 		resched_task(curr);
 		/*
@@ -1861,7 +1866,9 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
 		return NULL;
 
 	do {
-		se = pick_next_entity(cfs_rq);      // 提取红黑树最左边的进程
+        // 提取红黑树最左边的进程,此时进程已经不在红黑树中,用set_next_entity
+        // 将进程放在cfs_rq->curr中
+		se = pick_next_entity(cfs_rq);
 		set_next_entity(cfs_rq, se);
 		cfs_rq = group_cfs_rq(se);
 	} while (cfs_rq);
@@ -2044,10 +2051,11 @@ static void rq_offline_fair(struct rq *rq)
 /*
  * scheduler tick hitting a task of our scheduling class:
  */
+// scheduler_tick -> task_tick = task_tick_fair
 static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 {
 	struct cfs_rq *cfs_rq;
-	struct sched_entity *se = &curr->se;
+	struct sched_entity *se = &curr->se;            // 操作对象是curr...
 
 	for_each_sched_entity(se) {
 		cfs_rq = cfs_rq_of(se);
