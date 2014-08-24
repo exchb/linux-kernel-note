@@ -186,8 +186,8 @@ extern unsigned long long time_sync_thresh;
  * mistake.
  */
 #define TASK_RUNNING		0
-#define TASK_INTERRUPTIBLE	1
-#define TASK_UNINTERRUPTIBLE	2
+#define TASK_INTERRUPTIBLE	1                   // 进程阻塞睡眠,直到某条件为真,就变为运行
+#define TASK_UNINTERRUPTIBLE	2               // 不能通过信号来唤醒,其他同上
 #define __TASK_STOPPED		4
 #define __TASK_TRACED		8
 /* in tsk->exit_state */

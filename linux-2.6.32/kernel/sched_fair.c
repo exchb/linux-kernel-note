@@ -1785,7 +1785,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
 	if (unlikely(p->sched_class != &fair_sched_class))
 		return;
 
-	// 同一个进程，skip
+	// 同一个进程，skip(在try_to_wake_up中有可能把同一进程再次唤醒)
 	if (unlikely(se == pse))
 		return;
 

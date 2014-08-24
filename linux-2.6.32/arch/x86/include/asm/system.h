@@ -46,6 +46,7 @@ void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
  */
 // 调用方法 prev,next,prev
 // 这个宏返回后prew是上一个执行的进程,跟入参的prev可能有区别
+// arch/x86/kernel/process_32.c __switch_to函数
 #define switch_to(prev, next, last)					\
 do {									\
 	/*								\
@@ -64,7 +65,7 @@ do {									\
 		     "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */	\
 		     "pushl %[next_ip]\n\t"	/* restore EIP   */	\
 		     __switch_canary					\
-		     "jmp __switch_to\n"	/* regparm call  */	\      // arch/x86/kernel/process_32.c
+		     "jmp __switch_to\n"	/* regparm call  */	\
 		     "1:\t"						\
 		     "popl %%ebp\n\t"		/* restore EBP   */	\
 		     "popfl\n"			/* restore flags */	\
