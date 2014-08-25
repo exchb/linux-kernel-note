@@ -409,7 +409,7 @@ struct cfs_rq {
 
 /* Real-Time classes' related field in a runqueue: */
 struct rt_rq {
-	struct rt_prio_array active;
+	struct rt_prio_array active;                        // 实时进程都在一个两级链表中,相同的优先级一个链表
 	unsigned long rt_nr_running;
 #if defined CONFIG_SMP || defined CONFIG_RT_GROUP_SCHED
 	struct {
@@ -2534,7 +2534,7 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
 	orig_cpu = cpu;
 
 #ifdef CONFIG_SMP
-	if (unlikely(task_running(rq, p)))
+	if (unlikely(task_running(rq, p)))    // if rq->curr == p . 如果该进程正在运行,调用wake_up(即curr不平衡)
 		goto out_activate;
 
 	/*
@@ -2554,7 +2554,7 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
 	if (p->sched_class->task_waking)
 		p->sched_class->task_waking(rq, p);   // se->vruntime - min_vruntime
 
-	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);   // balance
+	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);   // cpu balance
 	if (cpu != orig_cpu)
 		set_task_cpu(p, cpu);
 	__task_rq_unlock(rq);
@@ -2619,11 +2619,11 @@ out_activate:
 
 out_running:
 	trace_sched_wakeup(rq, p, success);
-	check_preempt_curr(rq, p, wake_flags);
+	check_preempt_curr(rq, p, wake_flags);              // 检查是否可抢占,可以就resched_task
 
 	p->state = TASK_RUNNING;
 #ifdef CONFIG_SMP
-	if (p->sched_class->task_woken)
+	if (p->sched_class->task_woken)                     // CFS木有
 		p->sched_class->task_woken(rq, p);
 
 	if (unlikely(rq->idle_stamp)) {
@@ -5212,7 +5212,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	/* Don't need to rebalance while attached to NULL domain */
 	if (time_after_eq(jiffies, rq->next_balance) &&
 	    likely(!on_null_domain(cpu)))
-		raise_softirq(SCHED_SOFTIRQ);
+		raise_softirq(SCHED_SOFTIRQ);           // 发起这个软中断
 }
 
 #else	/* CONFIG_SMP */
@@ -6300,7 +6300,7 @@ sleep_on_common(wait_queue_head_t *q, int state, long timeout)
 	spin_lock_irqsave(&q->lock, flags);
 	__add_wait_queue(q, &wait);
 	spin_unlock(&q->lock);
-	timeout = schedule_timeout(timeout);
+	timeout = schedule_timeout(timeout);            // 进程切换
 	spin_lock_irq(&q->lock);
 	__remove_wait_queue(q, &wait);
 	spin_unlock_irqrestore(&q->lock, flags);

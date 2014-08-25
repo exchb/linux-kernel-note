@@ -36,8 +36,8 @@
  * Scheduling policies
  */
 #define SCHED_NORMAL		0
-#define SCHED_FIFO		1
-#define SCHED_RR		2
+#define SCHED_FIFO		1           // 除非自己放弃,否则可以运行任意时间
+#define SCHED_RR		2           // 有时间片的实时进程
 #define SCHED_BATCH		3
 /* SCHED_ISO: reserved but not implemented yet */
 #define SCHED_IDLE		5
