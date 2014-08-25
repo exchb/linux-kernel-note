@@ -2498,6 +2498,7 @@ int select_task_rq(struct rq *rq, struct task_struct *p, int sd_flags, int wake_
 /* --------------------------------------------------------------------------*/
 /**
  * @brief   把进程设置为TASK_RUNNING,插入rq
+ *          wake_up 一个进程的入口函数
  *
  * @param p          被唤醒的进程p
  * @param state      进程状态掩码(?)
@@ -2521,10 +2522,12 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
 	smp_wmb();
 	rq = orig_rq = task_rq_lock(p, &flags);
 	update_rq_clock(rq);
+
+	// sched.h volatile long state -1 unrunnable, 0 runnable, >0 stopped 
 	if (!(p->state & state))
 		goto out;
 
-	if (p->se.on_rq)
+	if (p->se.on_rq)                // 正在就绪队列
 		goto out_running;
 
 	cpu = task_cpu(p);
@@ -2549,7 +2552,7 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
 	p->state = TASK_WAKING;
 
 	if (p->sched_class->task_waking)
-		p->sched_class->task_waking(rq, p);
+		p->sched_class->task_waking(rq, p);   // se->vruntime - min_vruntime
 
 	cpu = select_task_rq(rq, p, SD_BALANCE_WAKE, wake_flags);   // balance
 	if (cpu != orig_cpu)
