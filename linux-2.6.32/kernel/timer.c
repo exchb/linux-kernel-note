@@ -1219,7 +1219,7 @@ static void run_timer_softirq(struct softirq_action *h)
 
 	perf_event_do_pending();
 
-	hrtimer_run_pending();
+	hrtimer_run_pending();          // 有机会就切换到nohz
 
 	if (time_after_eq(jiffies, base->timer_jiffies))
 		__run_timers(base);

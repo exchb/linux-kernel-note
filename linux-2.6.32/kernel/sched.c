@@ -4410,6 +4410,8 @@ static DEFINE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
  * Check this_cpu to ensure it is balanced within domain. Attempt to move
  * tasks if there is an imbalance.
  */
+// @calltrace : scheduler_tick->trigger_load_balance->run_rebalance_domains->rebalance_domains
+// 走这个函数是pull 模型,即在最繁忙的cpu上拉几个进程到当前rq
 static int load_balance(int this_cpu, struct rq *this_rq,
 			struct sched_domain *sd, enum cpu_idle_type idle,
 			int *balance)
@@ -5176,6 +5178,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	 * scheduler tick, then check if we need to nominate new idle
 	 * load balancer.
 	 */
+    // nohz 不依赖HZ,动态设置下一次中断时间而不是使用系统无条件中断
 	if (rq->in_nohz_recently && !rq->idle_at_tick) {
 		rq->in_nohz_recently = 0;
 
@@ -5213,7 +5216,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	/* Don't need to rebalance while attached to NULL domain */
 	if (time_after_eq(jiffies, rq->next_balance) &&
 	    likely(!on_null_domain(cpu)))
-		raise_softirq(SCHED_SOFTIRQ);           // 发起这个软中断
+		raise_softirq(SCHED_SOFTIRQ);           // -> run_rebalance_domains -> rebalance_domains
 }
 
 #else	/* CONFIG_SMP */
@@ -5598,7 +5601,7 @@ void scheduler_tick(void)
 
 #ifdef CONFIG_SMP
 	rq->idle_at_tick = idle_cpu(cpu);
-	trigger_load_balance(rq, cpu);
+	trigger_load_balance(rq, cpu);        // 每个tick都触发一次负载均衡
 #endif
 }
 

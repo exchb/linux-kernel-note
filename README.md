@@ -1,4 +1,5 @@
 linux-kernel-note
 =================
 
-comment for linux-kernel
+kernel source comments
+
