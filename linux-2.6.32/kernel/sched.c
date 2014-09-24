@@ -5192,14 +5192,25 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	if (rq->in_nohz_recently && !rq->idle_at_tick) {
 		rq->in_nohz_recently = 0;
 
+        // 如果之前是由本cpu做idle load balance
 		if (atomic_read(&nohz.load_balancer) == cpu) {
+
+            /*
+             * nohz.cpu_mask 表示停止周期时钟的cpu数
+             * 在select_nohz_load_balancer中被加入
+             * 
+             * 这里是需要开启周期时钟,所以清除了当前cpu在mask上的位置
+             * 并且取消了它作为idl的主cpu
+             */
 			cpumask_clear_cpu(cpu, nohz.cpu_mask);
 			atomic_set(&nohz.load_balancer, -1);
 		}
 
+        // 选择一个新的idl
 		if (atomic_read(&nohz.load_balancer) == -1) {
 			int ilb = find_new_ilb(cpu);
 
+            // 这是对find_new_ilb的错误处理
 			if (ilb < nr_cpu_ids)
 				resched_cpu(ilb);
 		}
@@ -5209,6 +5220,17 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	 * If this cpu is idle and doing idle load balancing for all the
 	 * cpus with ticks stopped, is it time for that to stop?
 	 */
+    /*
+     * idl cpu的思想是:
+     * 如果多个cpu都进入idle,总得有一个cpu实现watchdog的功能
+     * idle + 非周期timer的话,cpu会直接睡眠到下一次唤醒,而且是非周期性的timer,可能很长
+     * 这个时候即使有新进程选择了一个idle cpu(fork 或 wakeup)
+     * 如果没有这个看门cpu进行唤醒被选择的cpu,那么新进程将无法立即执行.
+     * 移动后idl的唤醒操作在load_balance中有描述
+     * 
+     * 下面这个判断的话,注意第三个条件.它判断了是否所有的cpu都进入idle.
+     * 当没有任一cpu有运行进程时候,自然这个watchdog也无事可做,可以去睡觉了
+     */
 	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) == cpu &&
 	    cpumask_weight(nohz.cpu_mask) == num_online_cpus()) {
 		resched_cpu(cpu);
