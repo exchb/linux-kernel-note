@@ -5131,6 +5131,8 @@ static void run_rebalance_domains(struct softirq_action *h)
 	 * balancing on behalf of the other idle cpus whose ticks are
 	 * stopped.
 	 */
+    // idle_at_tick 表示该cpu正在运行idle进程
+    // load_balancer表示该进程正是运行idle load balance的进程
 	if (this_rq->idle_at_tick &&
 	    atomic_read(&nohz.load_balancer) == this_cpu) {
 		struct rq *rq;
@@ -5145,6 +5147,7 @@ static void run_rebalance_domains(struct softirq_action *h)
 			 * work being done for other cpus. Next load
 			 * balancing owner will pick it up.
 			 */
+            // 如果这个进程不idle了
 			if (need_resched())
 				break;
 
@@ -5178,7 +5181,14 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	 * scheduler tick, then check if we need to nominate new idle
 	 * load balancer.
 	 */
-    // nohz 不依赖HZ,动态设置下一次中断时间而不是使用系统无条件中断
+    /*
+     * nohz 不依赖HZ,动态设置下一次中断时间而不是使用系统无条件中断
+     * in_nohz_recently == 1表示最近关闭了周期时钟,这是进入idle的标志
+     * idle_at_tick表示当前运行的是idle进程
+     *
+     * 所以这里的判断条件是如果进程不是运行的idle进程,而且目前时钟是
+     * 非周期性时钟,则开启周期时钟.进入正常调度
+     */
 	if (rq->in_nohz_recently && !rq->idle_at_tick) {
 		rq->in_nohz_recently = 0;
 
