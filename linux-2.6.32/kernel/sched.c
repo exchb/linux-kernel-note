@@ -5247,6 +5247,8 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 		return;
 #endif
 	/* Don't need to rebalance while attached to NULL domain */
+    // 本cpu没加入任何domain,则不需要idl
+    // 没加入任何domain,是没有cpu负载的 
 	if (time_after_eq(jiffies, rq->next_balance) &&
 	    likely(!on_null_domain(cpu)))
 		raise_softirq(SCHED_SOFTIRQ);           // -> run_rebalance_domains -> rebalance_domains
