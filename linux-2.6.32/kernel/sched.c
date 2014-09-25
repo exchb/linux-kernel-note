@@ -5229,7 +5229,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
      * 移动后idl的唤醒操作在load_balance中有描述
      * 
      * 下面这个判断的话,注意第三个条件.它判断了是否所有的cpu都进入idle.
-     * 当没有任一cpu有运行进程时候,自然这个watchdog也无事可做,可以去睡觉了
+     * 当没有任一cpu有运行进程时候,自然这个watchdog也无事可做,dog可以去睡觉了
      */
 	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) == cpu &&
 	    cpumask_weight(nohz.cpu_mask) == num_online_cpus()) {
@@ -5241,6 +5241,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 	 * If this cpu is idle and the idle load balancing is done by
 	 * someone else, then no need raise the SCHED_SOFTIRQ
 	 */
+    // 本cpu处于idle状态,且不是idl cpu,则什么都不用干,继续睡就行
 	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) != cpu &&
 	    cpumask_test_cpu(cpu, nohz.cpu_mask))
 		return;
