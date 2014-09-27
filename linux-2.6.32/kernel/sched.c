@@ -5041,6 +5041,7 @@ static DEFINE_SPINLOCK(balancing);
  *
  * Balancing parameters are set up in arch_init_sched_domains.
  */
+// 在该cpu所属的domain上执行load balance
 static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 {
 	int balance = 1;
@@ -5052,11 +5053,14 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 	int update_next_balance = 0;
 	int need_serialize;
 
+    // 遍历cpu属于的domain
 	for_each_domain(cpu, sd) {
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
 
+        // domain 执行load balance 的时间间隔
 		interval = sd->balance_interval;
+        // 如果当前运行的不是idle进程,则把时间间隔扩展
 		if (idle != CPU_IDLE)
 			interval *= sd->busy_factor;
 
@@ -5074,15 +5078,19 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 				goto out;
 		}
 
+        // 如果达到了load balance的执行点
 		if (time_after_eq(jiffies, sd->last_balance + interval)) {
+            // 从同一domain中的其他cpu里面拉进程到本cpu
 			if (load_balance(cpu, rq, sd, idle, &balance)) {
 				/*
 				 * We've pulled tasks over so either we're no
 				 * longer idle, or one of our SMT siblings is
 				 * not idle.
 				 */
+                // 如果拉进程成功,那么这个cpu就不会idle了
 				idle = CPU_NOT_IDLE;
 			}
+            // 更新上一次balance的时间为当前的jiffies
 			sd->last_balance = jiffies;
 		}
 		if (need_serialize)
@@ -5227,6 +5235,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
      * 这个时候即使有新进程选择了一个idle cpu(fork 或 wakeup)
      * 如果没有这个看门cpu进行唤醒被选择的cpu,那么新进程将无法立即执行.
      * 移动后idl的唤醒操作在load_balance中有描述
+     * 当然,如果是周期性时钟,也没这个事了.
      * 
      * 下面这个判断的话,注意第三个条件.它判断了是否所有的cpu都进入idle.
      * 当没有任一cpu有运行进程时候,自然这个watchdog也无事可做,dog可以去睡觉了
@@ -5247,6 +5256,8 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 		return;
 #endif
 	/* Don't need to rebalance while attached to NULL domain */
+    // 本cpu没有加入任何domain,则不需要idl
+    // 如果没有开启非周期性时钟,则不需要每次idl?
 	if (time_after_eq(jiffies, rq->next_balance) &&
 	    likely(!on_null_domain(cpu)))
 		raise_softirq(SCHED_SOFTIRQ);           // -> run_rebalance_domains -> rebalance_domains
