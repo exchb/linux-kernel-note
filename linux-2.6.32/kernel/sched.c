@@ -3270,13 +3270,22 @@ static void update_cpu_load(struct rq *this_rq)
 		 */
 		if (new_load > old_load)
 			new_load += scale-1;                    // 如果运行队列load比cpu_load大.有一定补偿(why?)
-		// TODO: xxx
-        // i = 0 scale = 1: (old_load * 0 + new_load) / 1
-        // i = 1 scale = 2: (old_load * 1 + new_load) / 2
-        // i = 2 scale = 4: (old_load * 3 + new_load) / 4
-        // i = 3 scale = 8: (old_load * 7 + new_load) / 8
-        // i = 4 scale = 16:(old_load * 15 + new_load) / 16
-        // i越大,老的值影响也就越大
+        /*
+         * 先写出递推式
+         * i = 0 scale = 1: (old_load * 0 + new_load) / 1
+         * i = 1 scale = 2: (old_load * 1 + new_load) / 2
+         * i = 2 scale = 4: (old_load * 3 + new_load) / 4
+         * i = 3 scale = 8: (old_load * 7 + new_load) / 8
+         * i = 4 scale = 16:(old_load * 15 + new_load) / 16
+         * 
+         * i越大,老的值影响也就越大.公式再拉一遍:
+         * f(i) = ( f(i - 1)(d - 1) + xi )/ d
+         *      = (d - 1)/d * f(i - 1) + 1/d * xi
+         *      = (1 - 1/d) * f(i - 1) + 1/d * xi
+         * 
+         * 其中d = 2^(i - 1) ,令 a = 1/d
+         * 标准的指数平滑: f(i) = (1 - a) * f(i - 1) + a * xi
+         */
 		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
 	}
 
@@ -4277,6 +4286,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	 * Compute the various statistics relavent for load balancing at
 	 * this level.
 	 */
+    // 遍历入参的sd,填充sds.即获取当前sd里面的状态.用于load_balance计算
 	update_sd_lb_stats(sd, this_cpu, idle, sd_idle, cpus,
 					balance, &sds);
 
@@ -5054,6 +5064,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 	int need_serialize;
 
     // 遍历cpu属于的domain
+    // 往上走的,即 sd to sd->parent
 	for_each_domain(cpu, sd) {
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
@@ -5062,6 +5073,8 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 		interval = sd->balance_interval;
         // 如果当前运行的不是idle进程,则把时间间隔扩展
         // 周期性空闲负载均衡,
+        //
+        // 扩展的目的,参考update_cpu_load.如果周期越长,那么
 		if (idle != CPU_IDLE)
 			interval *= sd->busy_factor;
 
