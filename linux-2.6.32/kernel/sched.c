@@ -3949,6 +3949,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
 	unsigned long avg_load_per_task = 0;
 
+    // 如果this_cpu 在当前的group中
 	if (local_group) {
 		balance_cpu = group_first_cpu(group);
 		if (balance_cpu == this_cpu)
@@ -4057,6 +4058,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 	do {
 		int local_group;
 
+        // 判断this_cpu是否在当前的group中
 		local_group = cpumask_test_cpu(this_cpu,
 					       sched_group_cpus(group));
 		memset(&sgs, 0, sizeof(sgs));
@@ -4287,6 +4289,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	 * this level.
 	 */
     // 遍历入参的sd,填充sds.即获取当前sd里面的状态.用于load_balance计算
+    // 里面的计算是整个load balance的基础
 	update_sd_lb_stats(sd, this_cpu, idle, sd_idle, cpus,
 					balance, &sds);
 
@@ -5074,7 +5077,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
         // 如果当前运行的不是idle进程,则把时间间隔扩展
         // 周期性空闲负载均衡,
         //
-        // 扩展的目的,参考update_cpu_load.如果周期越长,那么
+        // TODO 扩展的目的
 		if (idle != CPU_IDLE)
 			interval *= sd->busy_factor;
 
