@@ -3668,7 +3668,7 @@ static inline int get_sd_load_idx(struct sched_domain *sd,
 
 	switch (idle) {
 	case CPU_NOT_IDLE:
-		load_idx = sd->busy_idx;
+		load_idx = sd->busy_idx;          // 忙时,负载计算
 		break;
 
 	case CPU_NEWLY_IDLE:
@@ -3974,6 +3974,10 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 				balance_cpu = i;
 			}
 
+            /*
+             * 取当前cpu i的load和cpu_load[load_idx - 1]的最大值
+             * load_idx = get_sd_load_idx(sd, idle);
+             */
 			load = target_load(i, load_idx);
 		} else {
 			load = source_load(i, load_idx);
