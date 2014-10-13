@@ -3666,16 +3666,20 @@ static inline int get_sd_load_idx(struct sched_domain *sd,
 {
 	int load_idx;
 
+    // 在arch/ia64/include/asm/topology.h有SD_NODE_INIT
+    // 不同的cpu架构,提供的idx不同
+    // x86提供了busy_idx idle_idx等idx的默认值如下:
+    // 默认busy_idx == 3 , idle_idx == 2 , newidle_idx == 0
 	switch (idle) {
 	case CPU_NOT_IDLE:
-		load_idx = sd->busy_idx;          // 忙时,负载计算
+		load_idx = sd->busy_idx;          // 忙时,负载计算受更多历史值影响
 		break;
 
 	case CPU_NEWLY_IDLE:
 		load_idx = sd->newidle_idx;
 		break;
 	default:
-		load_idx = sd->idle_idx;
+		load_idx = sd->idle_idx;          // 空闲时,负载计算不用多考虑历史值
 		break;
 	}
 
@@ -3949,7 +3953,10 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
 	unsigned long avg_load_per_task = 0;
 
-    // 如果this_cpu 在当前的group中
+	// local_group = cpumask_test_cpu(this_cpu,sched_group_cpus(group));
+    // group = sd->groups
+    // FIXME 其实我没理解local_group
+    // https://www.kernel.org/doc/Documentation/scheduler/sched-domains.txt
 	if (local_group) {
 		balance_cpu = group_first_cpu(group);
 		if (balance_cpu == this_cpu)
@@ -3961,6 +3968,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	min_cpu_load = ~0UL;
 	max_nr_running = 0;
 
+    // 遍历group中的候选cpu
 	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
 		struct rq *rq = cpu_rq(i);
 
@@ -3971,6 +3979,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 		if (local_group) {
 			if (idle_cpu(i) && !first_idle_cpu) {
 				first_idle_cpu = 1;
+                // 寻找第一个idle cpu
 				balance_cpu = i;
 			}
 
@@ -3980,7 +3989,11 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
              */
 			load = target_load(i, load_idx);
 		} else {
+            /*
+             * 取当前cpu i的load和cpu_load[load_idx - 1]的最小值
+             */
 			load = source_load(i, load_idx);
+            // 更新最大最小值
 			if (load > max_cpu_load) {
 				max_cpu_load = load;
 				max_nr_running = rq->nr_running;
@@ -4059,6 +4072,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 	init_sd_power_savings_stats(sd, sds, idle);
 	load_idx = get_sd_load_idx(sd, idle);
 
+    // do while遍历该sd下的groups
 	do {
 		int local_group;
 
@@ -4745,6 +4759,7 @@ out_balanced:
  * idle_balance is called by schedule() if this_cpu is about to become
  * idle. Attempts to pull tasks from other CPUs.
  */
+// @caller schedule
 static void idle_balance(int this_cpu, struct rq *this_rq)
 {
 	struct sched_domain *sd;
@@ -5070,8 +5085,9 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 	int update_next_balance = 0;
 	int need_serialize;
 
-    // 遍历cpu属于的domain
+    // 遍历cpu属于的domain,至下而上的方式
     // 往上走的,即 sd to sd->parent
+    // 最底层的cpu group中执行load_balance,开销最小(考虑cpu cache的热度问题)
 	for_each_domain(cpu, sd) {
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
