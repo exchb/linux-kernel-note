@@ -3968,13 +3968,14 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 
 	/* Tally up the load of all CPUs in the group */
 	max_cpu_load = 0;
-	min_cpu_load = ~0UL;
+	min_cpu_load = ~0UL;   // 0xffff
 	max_nr_running = 0;
 
-    // 遍历group中的候选cpu
+    // 遍历组内的cpu
 	for_each_cpu_and(i, sched_group_cpus(group), cpus) {
 		struct rq *rq = cpu_rq(i);
 
+        // 如果有进程运行,更新这个sched_domain为非idle
 		if (*sd_idle && rq->nr_running)
 			*sd_idle = 0;
 
@@ -3982,8 +3983,9 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
         /*
          * 注释的意思是偏向本组的组
          * 下面有target_load和source_load的区分.
-         * FIXME
-         * 我猜这么区分是因为linux的中断响应几乎总在一个cpu上(如果配置)
+         *
+         * FIXME 阅读local apci后回来想这个问题
+         * 目前猜这么区分是因为linux的时钟中断响应几乎总在一个cpu上
          * 中断响应会消耗cpu,但是不会在cpu load上体现(cpu load 是权重和平滑后结果)
          * 所以这个组需要一定的补偿,给予一个比较大的值
          */
@@ -4014,6 +4016,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 		}
 
         // update sgs
+        // 更新group的统计量
 		sgs->group_load += load;
 		sgs->sum_nr_running += rq->nr_running;
 		sgs->sum_weighted_load += weighted_cpuload(i);
@@ -4025,15 +4028,29 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	 * First idle cpu or the first cpu(busiest) in this sched group
 	 * is eligible for doing load balancing at this and above
 	 * domains. In the newly idle case, we will allow all the cpu's
-	 * to do the newly idle load balance.
+	 * to do the newly idle load balanceh
 	 */
-	if (idle != CPU_NEWLY_IDLE && local_group &&
+    /*
+     * 如果balance类型是CPU_NEWLY_IDLE,那么总是被允许load balance的
+     * 否则只有当前domain的第一个idle cpu是当前cpu(this_cpu)的时候
+     * 适合做load balance
+     *
+     * 这里的第一个cpu的判断比较迷惑,实际上就几种情况
+     * 1. this_cpu idle 但是其他cpu不idle.那么this_cpu确实该做load_balance
+     * 2. this_cpu 不idle 但是其他cpu idle.那么load_balance因该其他cpu做
+     * 3. 都idle或者都不idle的不限制
+     *
+     * 所以第一个idle的判断只是看当前的cpu是否适合做load balance
+     */
+	if (idle != CPU_NEWLY_IDLE && local_eroup &&
 	    balance_cpu != this_cpu && balance) {
 		*balance = 0;
 		return;
 	}
 
 	/* Adjust by relative CPU power of the group */
+    // 计算group平均负载,注意sgs是个局部变量,所以这个统计是一次性的
+    // 不会累加
 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
 
 	/*
@@ -4045,9 +4062,18 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	 *      normalized nr_running number somewhere that negates
 	 *      the hierarchy?
 	 */
+    /*
+     * sum_nr_running 是 group中的总进程数
+     * 这是更新了该group的平均每个进程负载(weight)
+     */
 	if (sgs->sum_nr_running)
 		avg_load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
 
+    /*
+     * 如果最大的cpu负载 - 最小的cpu负载,相差两个平均进程负载,认为不平衡,对group_imb标记
+     * 注意非local_group才去计算了它是否平衡,local_group是没有更新
+     * max_cpu_load和min_cpu_load的
+     */
 	if ((max_cpu_load - min_cpu_load) > 2*avg_load_per_task && max_nr_running > 1)
 		sgs->group_imb = 1;
 
