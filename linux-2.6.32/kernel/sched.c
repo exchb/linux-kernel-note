@@ -3953,10 +3953,13 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
 	unsigned long avg_load_per_task = 0;
 
-	// local_group = cpumask_test_cpu(this_cpu,sched_group_cpus(group));
-    // group = sd->groups
-    // FIXME 其实我没理解local_group
-    // https://www.kernel.org/doc/Documentation/scheduler/sched-domains.txt
+    /*
+	 * local_group = cpumask_test_cpu(this_cpu,sched_group_cpus(group));
+     * group = sd->groups
+     * https://www.kernel.org/doc/Documentation/scheduler/sched-domains.txt
+     * 文档说这是一个groups链...所以sd->groups是domain下的第一个group
+     * comments在update_sd_lb_stats
+     */
 	if (local_group) {
 		balance_cpu = group_first_cpu(group);
 		if (balance_cpu == this_cpu)
@@ -3976,6 +3979,14 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 			*sd_idle = 0;
 
 		/* Bias balancing toward cpus of our domain */
+        /*
+         * 注释的意思是偏向本组的组
+         * 下面有target_load和source_load的区分.
+         * FIXME
+         * 我猜这么区分是因为linux的中断响应几乎总在一个cpu上(如果配置)
+         * 中断响应会消耗cpu,但是不会在cpu load上体现(cpu load 是权重和平滑后结果)
+         * 所以这个组需要一定的补偿,给予一个比较大的值
+         */
 		if (local_group) {
 			if (idle_cpu(i) && !first_idle_cpu) {
 				first_idle_cpu = 1;
@@ -4002,6 +4013,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 				min_cpu_load = load;
 		}
 
+        // update sgs
 		sgs->group_load += load;
 		sgs->sum_nr_running += rq->nr_running;
 		sgs->sum_weighted_load += weighted_cpuload(i);
@@ -4076,7 +4088,11 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 	do {
 		int local_group;
 
-        // 判断this_cpu是否在当前的group中
+        /*
+         * 判断this_cpu是否在当前的group中,从内核的doc来看
+         * a base domain for CPU i MUST span at least i
+         * 然后叠上去.所以local_group其实表达了当前是否在该cpu对应的domain里
+         */
 		local_group = cpumask_test_cpu(this_cpu,
 					       sched_group_cpus(group));
 		memset(&sgs, 0, sizeof(sgs));
