@@ -1247,13 +1247,14 @@ void wake_up_idle_cpu(int cpu)
 
 static u64 sched_avg_period(void)
 {
-	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2;
-	// 纳秒
+    // 见time.h中关于NSEC_PER_MSEC等定义,这里范围纳秒
+    // 算出来就是0.5 秒
+	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2; // 
 }
 
 static void sched_avg_update(struct rq *rq)
 {
-	s64 period = sched_avg_period();
+	s64 period = sched_avg_period();   // 0.5秒
 
 	while ((s64)(rq->clock - rq->age_stamp) > period) {
 		/*
@@ -1270,7 +1271,7 @@ static void sched_avg_update(struct rq *rq)
 
 static void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {
-	rq->rt_avg += rt_delta;
+	rq->rt_avg += rt_delta;   // rt_delta是两次时钟中断的差值
 	sched_avg_update(rq);
 }
 
@@ -1897,7 +1898,7 @@ EXPORT_SYMBOL_GPL(account_system_vtime);
 static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
 {
 	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
-		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
+		u64 delta_irq = curr_irq_time - rq->prev_irq_time;   // 离上次时钟中断的时间
 		rq->prev_irq_time = curr_irq_time;
 		sched_rt_avg_update(rq, delta_irq);
 	}
@@ -3864,6 +3865,8 @@ unsigned long scale_rt_power(int cpu)
 		/* Ensures that power won't end up being negative */
 		available = 0;
 	} else {
+        // 按各种文章解释(非官方)
+        // rq->rt_avg表达了该cpu运行实时进程的平均时间
 		available = total - rq->rt_avg;
 	}
 
@@ -3878,7 +3881,7 @@ unsigned long scale_rt_power(int cpu)
 static void update_cpu_power(struct sched_domain *sd, int cpu)
 {
 	unsigned long weight = sd->span_weight;
-	unsigned long power = SCHED_LOAD_SCALE;
+	unsigned long power = SCHED_LOAD_SCALE;    // 初始值
 	struct sched_group *sdg = sd->groups;
 
 	if (sched_feat(ARCH_POWER))
@@ -3888,6 +3891,8 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
 
 	power >>= SCHED_LOAD_SHIFT;
 
+    // 这个语句都是同一个结果,最终power >>= SCHED_LOAD_SHIFT
+    // 所以这个语句块什么都没干.....
 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
 		if (sched_feat(ARCH_POWER))
 			power *= arch_scale_smt_power(sd, cpu);
@@ -3897,6 +3902,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
 		power >>= SCHED_LOAD_SHIFT;
 	}
 
+    // 主要就是它了
 	power *= scale_rt_power(cpu);
 	power >>= SCHED_LOAD_SHIFT;
 
