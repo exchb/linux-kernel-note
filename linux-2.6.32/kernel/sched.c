@@ -674,6 +674,7 @@ int runqueue_is_locked(int cpu)
 /*
  * Debugging: various feature bits
  */
+// FIXME 这都tm是什么用法?
 
 #define SCHED_FEAT(name, enabled)	\
 	__SCHED_FEAT_##name ,
@@ -1247,11 +1248,17 @@ void wake_up_idle_cpu(int cpu)
 
 static u64 sched_avg_period(void)
 {
-    // 见time.h中关于NSEC_PER_MSEC等定义,这里范围纳秒
+    // 见time.h中关于NSEC_PER_MSEC等定义,这里返回纳秒
     // 算出来就是0.5 秒
 	return (u64)sysctl_sched_time_avg * NSEC_PER_MSEC / 2; // 
 }
 
+// 从函数运作和入参来看,是要把rt_delta平均进去
+// 如果当前时间比上次平均时间大了0.5秒,执行平均一次
+// 于是rt_avg表达了该rq上的实时进程平均执行时间
+//
+// FIXME 这个0.5秒的经验值不太理解
+// FIXME update_rq_clock不太理解
 static void sched_avg_update(struct rq *rq)
 {
 	s64 period = sched_avg_period();   // 0.5秒
@@ -1269,9 +1276,19 @@ static void sched_avg_update(struct rq *rq)
 	}
 }
 
+/*
+ * @caller update_curr_rt (sched_rt.c)
+ * @caller update_rq_clock 这个没理解
+ *
+ * 当caller为update_curr_rt时候,rt_delta == rq->clock_task - curr->se.exec_start;
+ * 入参为当前cpu上的curr进程执行时间
+ *
+ * 当caller为update_rq_clock的时候未理解
+ * update_rq_clock时,入参为两个irq的时间差
+ */
 static void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {
-	rq->rt_avg += rt_delta;   // rt_delta是两次时钟中断的差值
+	rq->rt_avg += rt_delta;
 	sched_avg_update(rq);
 }
 
