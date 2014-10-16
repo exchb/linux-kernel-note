@@ -1256,6 +1256,7 @@ static u64 sched_avg_period(void)
 // 从函数运作和入参来看,是要把rt_delta平均进去
 // 如果当前时间比上次平均时间大了0.5秒,执行平均一次
 // 于是rt_avg表达了该rq上的实时进程平均执行时间
+// age_stamp表达了最后一次更新的时间.
 //
 // FIXME 这个0.5秒的经验值不太理解
 // FIXME update_rq_clock不太理解
@@ -3876,6 +3877,7 @@ unsigned long scale_rt_power(int cpu)
 	struct rq *rq = cpu_rq(cpu);
 	u64 total, available;
 
+    // 当前时间 - 上一次平均rt的时间 + 0.5s
 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
 
 	if (unlikely(total < rq->rt_avg)) {
@@ -3884,6 +3886,7 @@ unsigned long scale_rt_power(int cpu)
 	} else {
         // 按各种文章解释(非官方)
         // rq->rt_avg表达了该cpu运行实时进程的平均时间
+        // 总时间 - 实时进程的时间,就表达了available的时间
 		available = total - rq->rt_avg;
 	}
 
