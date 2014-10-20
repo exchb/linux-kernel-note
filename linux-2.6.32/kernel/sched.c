@@ -3898,6 +3898,7 @@ unsigned long scale_rt_power(int cpu)
 	return div_u64(available, total);
 }
 
+// cpu_power 代表该cpu当前能容纳CFS进程的能力
 static void update_cpu_power(struct sched_domain *sd, int cpu)
 {
 	unsigned long weight = sd->span_weight;
@@ -4097,7 +4098,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 
     /*
      * 如果最大的cpu负载 - 最小的cpu负载,相差两个平均进程负载,认为不平衡,对group_imb标记
-     * 注意非local_group才去计算了它是否平衡,local_group是没有更新
+     *
+     * notice : 注意非local_group才去计算了它是否平衡,local_group是没有更新
      * max_cpu_load和min_cpu_load的
      */
 	if ((max_cpu_load - min_cpu_load) > 2*avg_load_per_task && max_nr_running > 1)
@@ -4106,6 +4108,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
 	sgs->group_weight = group->group_weight;
 
+    // group_capacity取的cpu_power,这里即判断当前cpu是否还能接纳进程
 	if (sgs->group_capacity > sgs->sum_nr_running)
 		sgs->group_has_capacity = 1;
 }
