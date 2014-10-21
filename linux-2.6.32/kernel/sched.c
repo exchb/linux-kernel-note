@@ -4076,8 +4076,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	}
 
 	/* Adjust by relative CPU power of the group */
-    // 计算group平均负载,注意sgs是个局部变量,所以这个统计是一次性的
-    // 不会累加
+    // 计算group平均负载
 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
 
 	/*
@@ -4154,6 +4153,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 		update_sg_lb_stats(sd, group, this_cpu, idle, load_idx, sd_idle,
 				local_group, cpus, balance, &sgs);
 
+        // 如果当前的group不适合做balance,就不做了
 		if (local_group && balance && !(*balance))
 			return;
 
@@ -4180,6 +4180,8 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 			sds->this_load_per_task = sgs.sum_weighted_load;
 			sds->this_has_capacity = sgs.group_has_capacity;
 			sds->this_idle_cpus = sgs.idle_cpus;
+
+            // 计算max load group ,并且更新busiest_group
 		} else if (sgs.avg_load > sds->max_load &&
 			   (sgs.sum_nr_running > sgs.group_capacity ||
 				sgs.group_imb)) {
@@ -4396,9 +4398,11 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	 * does not have any capacity, we force a load balance to pull tasks
 	 * to the local group. In this case, we skip past checks 3, 4 and 5.
 	 */
+    // 如果不适合做balance
 	if (balance && !(*balance))
 		goto ret;
 
+    // 如果没有busiest_group
 	if (!sds.busiest || sds.busiest_nr_running == 0)
 		goto out_balanced;
 
@@ -4407,11 +4411,13 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 			!sds.busiest_has_capacity)
 		goto force_balance;
 
+    // local group 比最大的group load还大,认为已经平衡
 	if (sds.this_load >= sds.max_load)
 		goto out_balanced;
 
 	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
 
+    // local group 比平均的group_load 大,认为已平衡
 	if (sds.this_load >= sds.avg_load)
 		goto out_balanced;
 
@@ -4421,6 +4427,9 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	 * CPU_NOT_IDLE. This is because HT siblings will use CPU_NOT_IDLE
 	 * even when they are idle.
 	 */
+    // 传统方法是 if imbalance_pct * load_current < 100 * load_target:
+    //                goto out_balanced
+    // load_current == source_load, load_target == target_load
 	if (idle == CPU_NEWLY_IDLE || !idle_cpu(this_cpu)) {
 		if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
 			goto out_balanced;
