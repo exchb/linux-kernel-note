@@ -4011,10 +4011,9 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
          * 注释的意思是偏向本组的组
          * 下面有target_load和source_load的区分.
          *
-         * FIXME 阅读local apci后回来想这个问题
-         * 目前猜这么区分是因为linux的时钟中断响应几乎总在一个cpu上
-         * 中断响应会消耗cpu,但是不会在cpu load上体现(cpu load 是权重和平滑后结果)
-         * 所以这个组需要一定的补偿,给予一个比较大的值
+         * 用意是对local_group尽量抬升,另外的group尽量降低
+         * 也就是尽量对local_group进行补偿
+         * 为了不做load_balance
          */
 		if (local_group) {
 			if (idle_cpu(i) && !first_idle_cpu) {
@@ -4402,7 +4401,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	if (balance && !(*balance))
 		goto ret;
 
-    // 如果没有busiest_group
+    // 如果没有busiest_group,或者busiest_group运行的进程也是0
 	if (!sds.busiest || sds.busiest_nr_running == 0)
 		goto out_balanced;
 
@@ -4429,10 +4428,14 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	 */
     // 传统方法是 if imbalance_pct * load_current < 100 * load_target:
     //                goto out_balanced
+    // 在这儿要CPU_NEWLY_IDLE了
+    // imbalance_pct 同样在SD_NODE_INIT里有初始值,是对物理核调度域的一个估量
     // load_current == source_load, load_target == target_load
 	if (idle == CPU_NEWLY_IDLE || !idle_cpu(this_cpu)) {
 		if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
 			goto out_balanced;
+    // 对于非CPU_NEWLY_IDLE,判断两个group的idle cpu数差距是不是过大
+    // 以及当前调度域的进程数
 	} else {
 		/*
 		 * This cpu is idle. If the busiest group load doesn't
@@ -4445,6 +4448,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 			goto out_balanced;
 	}
 
+    // 只有这会进行load_balance
 force_balance:
 	/* Looks like there is an imbalance. Compute it */
 	calculate_imbalance(&sds, this_cpu, imbalance);
@@ -5165,8 +5169,11 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 	int update_next_balance = 0;
 	int need_serialize;
 
+    // domain和group的区别:
+    // domain最低层次至少包含几个亲缘性近的cpu,而最低层的group只包含一个cpu
+    //
     // 遍历cpu属于的domain,至下而上的方式
-    // 往上走的,即 sd to sd->parent
+    // 往上走的,即 sd to sd->parent,从当前cpu所在的domain开始
     // 最底层的cpu group中执行load_balance,开销最小(考虑cpu cache的热度问题)
 	for_each_domain(cpu, sd) {
 		if (!(sd->flags & SD_LOAD_BALANCE))
