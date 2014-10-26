@@ -4095,7 +4095,9 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 		avg_load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
 
     /*
-     * 如果最大的cpu负载 - 最小的cpu负载,相差两个平均进程负载,认为不平衡,对group_imb标记
+     * 如果最大的cpu负载 - 最小的cpu负载,相差该group的平均进程负载* 2
+     * ,认为不平衡,对group_imb标记,该标记在calculate_imbalance时候用以计算
+     * 不平衡度
      *
      * notice : 注意非local_group才去计算了它是否平衡,local_group是没有更新
      * max_cpu_load和min_cpu_load的
@@ -4282,6 +4284,10 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 {
 	unsigned long max_pull, load_above_capacity = ~0UL;
 
+	// sds->busiest_load_per_task = sgs.sum_weighted_load;
+	// sds->busiest_nr_running = sgs.sum_nr_running;
+    // 在update_sd_lb_stats里面更新
+    // 所以这儿取的是忙group里的进程平均负载
 	sds->busiest_load_per_task /= sds->busiest_nr_running;
 	if (sds->group_imb) {
 		sds->busiest_load_per_task =
@@ -4486,7 +4492,7 @@ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
 			continue;
 
 		rq = cpu_rq(i);
-		wl = weighted_cpuload(i);
+		wl = weighted_cpuload(i);  // load.weight
 
 		/*
 		 * When comparing with imbalance, use weighted_cpuload()
