@@ -4158,6 +4158,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 		if (local_group && balance && !(*balance))
 			return;
 
+        // 更新sds的统计量
 		sds->total_load += sgs.group_load;
 		sds->total_pwr += group->cpu_power;
 
@@ -4194,7 +4195,7 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
 			sds->busiest_group_weight = sgs.group_weight;
 			sds->busiest_load_per_task = sgs.sum_weighted_load;
 			sds->busiest_has_capacity = sgs.group_has_capacity;
-			sds->group_imb = sgs.group_imb;
+			sds->group_imb = sgs.group_imb;   // 有一个group失衡,则标记sds失衡
 		}
 
 		update_sd_power_savings_stats(group, sds, local_group, &sgs);
@@ -4287,8 +4288,10 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 	// sds->busiest_load_per_task = sgs.sum_weighted_load;
 	// sds->busiest_nr_running = sgs.sum_nr_running;
     // 在update_sd_lb_stats里面更新
-    // 所以这儿取的是忙group里的进程平均负载
+    // 所以这儿取的是忙group里的进程当前平均负载
 	sds->busiest_load_per_task /= sds->busiest_nr_running;
+
+    // 如果忙group进程失衡,则取min(当前负载,当前该domian所有的groups平均负载)
 	if (sds->group_imb) {
 		sds->busiest_load_per_task =
 			min(sds->busiest_load_per_task, sds->avg_load);
@@ -4299,11 +4302,15 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 	 * max load less than avg load(as we skip the groups at or below
 	 * its cpu_power, while calculating max_load..)
 	 */
+    // 如果最忙group的负载小于理论平均负载,说明sds已经平衡(sds->avg_load = load / cpu_powers)
+    // 这个时候只做小范围调整
+    // 有imb标记或者没有imb标记都这样.....
 	if (sds->max_load < sds->avg_load) {
 		*imbalance = 0;
 		return fix_small_imbalance(sds, this_cpu, imbalance);
 	}
 
+    // 如果没有不平衡的
 	if (!sds->group_imb) {
 		/*
 		 * Don't want to pull so many tasks that a group would go idle.
