@@ -4310,7 +4310,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 		return fix_small_imbalance(sds, this_cpu, imbalance);
 	}
 
-    // 如果没有不平衡的
+    // 如果其他group没有不平衡的
 	if (!sds->group_imb) {
 		/*
 		 * Don't want to pull so many tasks that a group would go idle.
