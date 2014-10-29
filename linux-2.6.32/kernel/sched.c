@@ -1259,7 +1259,6 @@ static u64 sched_avg_period(void)
 // age_stamp表达了最后一次更新的时间.
 //
 // FIXME 这个0.5秒的经验值不太理解
-// FIXME update_rq_clock不太理解
 static void sched_avg_update(struct rq *rq)
 {
 	s64 period = sched_avg_period();   // 0.5秒
@@ -1272,7 +1271,6 @@ static void sched_avg_update(struct rq *rq)
 		 */
 		asm("" : "+rm" (rq->age_stamp));
 		rq->age_stamp += period;
-		// TODO: xxx
 		rq->rt_avg /= 2;
 	}
 }
@@ -1284,8 +1282,9 @@ static void sched_avg_update(struct rq *rq)
  * 当caller为update_curr_rt时候,rt_delta == rq->clock_task - curr->se.exec_start;
  * 入参为当前cpu上的curr进程执行时间
  *
- * 当caller为update_rq_clock的时候未理解
+ * 当caller为update_rq_clock的时候
  * update_rq_clock时,入参为两个irq的时间差
+ * 即该值还去掉了irq的时间,在计算cpu_power的时候,去掉了irq和rt,剩下的是CFS
  */
 static void sched_rt_avg_update(struct rq *rq, u64 rt_delta)
 {
@@ -3872,19 +3871,26 @@ unsigned long __weak arch_scale_smt_power(struct sched_domain *sd, int cpu)
 	return default_scale_smt_power(sd, cpu);
 }
 
+// rt->avg在sched_rt_avg_update中更新,代表两个时间的和
+// 一是rt进程运行时间(sched_rt_avg_update在sched_rt.c中add)
+// 二是irq的时间(update_rq_clock中add)
+// rt->age_stamp在上面两个函数中均有更新
+// 于是total的计算就代表当前时间点到上次更新的时间差
+// available就计算了cpu的CFS时间(除了irq和rt进程,就是CFS+idle)
 unsigned long scale_rt_power(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
 	u64 total, available;
 
     // 当前时间 - 上一次平均rt的时间 + 0.5s
+    // total 单位 ns 即 10^-9
+    // 有0.5s这个基数在 ... 0.5 * 10^9
 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
 
 	if (unlikely(total < rq->rt_avg)) {
 		/* Ensures that power won't end up being negative */
 		available = 0;
 	} else {
-        // 按各种文章解释(非官方)
         // rq->rt_avg表达了该cpu运行实时进程的平均时间
         // 总时间 - 实时进程的时间,就表达了available的时间
 		available = total - rq->rt_avg;
@@ -3926,10 +3932,12 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
 	}
 
     // 主要就是它了
+    // power *= (available / total) * SCHED_LOAD_SCALE
+    // power还是初始的SCHED_LOAD_SCALE
 	power *= scale_rt_power(cpu);
 
-    // 再乘以了SCHED_LOAD_SCALE,
-    // 于是cpu_power = (available / total) * SCHED_LOAD_SCALE * SCHED_LOAD_SCALE
+    // 再除以了SCHED_LOAD_SCALE,
+    // 于是cpu_power = (available / total) * SCHED_LOAD_SCALE
 	power >>= SCHED_LOAD_SHIFT;
 
 	if (!power)
@@ -4081,6 +4089,12 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 
 	/* Adjust by relative CPU power of the group */
     // 计算group平均负载 NICE_0_LOAD == SCHED_LOAD_SCALE
+	// sgs->group_load += load;
+    // load 是 weight 经过指数计算的来
+	// p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];    // 对普通进程 prio_to_weight[nice]
+    // group_load是group上所有进程的load.weight求和(rt进程的load为0,也就全是CFS进程load和)
+    // cpu_power = (available / total) * SCHED_LOAD_SCALE
+    // 于是计算就成了 avg_load =  sgs->group_load / (available / total)
 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
 
 	/*
@@ -4113,7 +4127,6 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
 	sgs->group_weight = group->group_weight;
 
-    // group_capacity取的cpu_power,这里即判断当前cpu是否还能接纳进程
 	if (sgs->group_capacity > sgs->sum_nr_running)
 		sgs->group_has_capacity = 1;
 }
@@ -4325,10 +4338,6 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 		load_above_capacity = (sds->busiest_nr_running -
 						sds->busiest_group_capacity);
 
-        // SMP核的cpu power都是SCHED_LOAD_SCALE
-        // 进程数乘以一次SCHED_LOAD_SCALE,表示这堆进程的总负载数(不算level)
-        // NICE_0_LOAD == SCHED_LOAD_SCALE
-        // 第二次乘再除以cpu_power
 		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_LOAD_SCALE);
 
 		load_above_capacity /= sds->busiest->cpu_power;
