@@ -49,6 +49,8 @@ extern const char linux_proc_banner[];
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 // 将x提升至第一个大于x且能被y整除的整数
 #define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+
+// x是被除数,divisor是除数,并且四舍五入到整数
 #define DIV_ROUND_CLOSEST(x, divisor)(			\
 {							\
 	typeof(divisor) __divisor = divisor;		\

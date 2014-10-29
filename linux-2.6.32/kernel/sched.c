@@ -3895,6 +3895,7 @@ unsigned long scale_rt_power(int cpu)
 
 	total >>= SCHED_LOAD_SHIFT;
 
+    // (available / total) * SCHED_LOAD_SCALE
 	return div_u64(available, total);
 }
 
@@ -3910,6 +3911,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
 	else
 		power *= default_scale_freq_power(sd, cpu);
 
+    // default_scale_freq_power == SCHED_LOAD_SCALE
 	power >>= SCHED_LOAD_SHIFT;
 
     // 这个语句都是同一个结果,最终power >>= SCHED_LOAD_SHIFT
@@ -3925,6 +3927,9 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
 
     // 主要就是它了
 	power *= scale_rt_power(cpu);
+
+    // 再乘以了SCHED_LOAD_SCALE,
+    // 于是cpu_power = (available / total) * SCHED_LOAD_SCALE * SCHED_LOAD_SCALE
 	power >>= SCHED_LOAD_SHIFT;
 
 	if (!power)
@@ -4075,7 +4080,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	}
 
 	/* Adjust by relative CPU power of the group */
-    // 计算group平均负载
+    // 计算group平均负载 NICE_0_LOAD == SCHED_LOAD_SCALE
 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
 
 	/*
@@ -4311,6 +4316,8 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 	}
 
     // 如果其他group没有不平衡的
+    // 计算最忙的组能拉多少进程
+    // 即看最忙的组是不是进程数超过了它的容量
 	if (!sds->group_imb) {
 		/*
 		 * Don't want to pull so many tasks that a group would go idle.
@@ -4318,6 +4325,10 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 		load_above_capacity = (sds->busiest_nr_running -
 						sds->busiest_group_capacity);
 
+        // SMP核的cpu power都是SCHED_LOAD_SCALE
+        // 进程数乘以一次SCHED_LOAD_SCALE,表示这堆进程的总负载数(不算level)
+        // NICE_0_LOAD == SCHED_LOAD_SCALE
+        // 第二次乘再除以cpu_power
 		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_LOAD_SCALE);
 
 		load_above_capacity /= sds->busiest->cpu_power;
@@ -4333,6 +4344,10 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 	 * Be careful of negative numbers as they'll appear as very large values
 	 * with unsigned longs.
 	 */
+    // 填值的语句在这:
+	// sds->total_pwr += group->cpu_power;
+	// sds.avg_load = (sched_load_scale * sds.total_load) / sds.total_pwr;
+	// sds->max_load = sgs.avg_load;  busiest group的avg_load
 	max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
 
 	/* How much load to actually move to equalise the imbalance */
@@ -4427,7 +4442,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	if (sds.this_load >= sds.max_load)
 		goto out_balanced;
 
-	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
+	sds.avg_load = (sched_load_scale * sds.total_load) / sds.total_pwr;
 
     // local group 比平均的group_load 大,认为已平衡
 	if (sds.this_load >= sds.avg_load)
