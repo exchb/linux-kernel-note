@@ -4093,8 +4093,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
     // load 是 weight 经过指数计算的来
 	// p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];    // 对普通进程 prio_to_weight[nice]
     // group_load是group上所有进程的load.weight求和(rt进程的load为0,也就全是CFS进程load和)
-    // cpu_power = (available / total) * SCHED_LOAD_SCALE
-    // 于是计算就成了 avg_load =  sgs->group_load / (available / total)
+    // 这就是avg_load定义...
 	sgs->avg_load = (sgs->group_load * SCHED_LOAD_SCALE) / group->cpu_power;
 
 	/*
