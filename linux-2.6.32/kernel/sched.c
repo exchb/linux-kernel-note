@@ -3892,7 +3892,8 @@ unsigned long scale_rt_power(int cpu)
 		available = 0;
 	} else {
         // rq->rt_avg表达了该cpu运行实时进程的平均时间
-        // 总时间 - 实时进程的时间,就表达了available的时间
+        // 总时间 - 实时进程 - irq的时间,就表达了available的时间
+        // 表示CFS还能有的时间
 		available = total - rq->rt_avg;
 	}
 
@@ -4088,7 +4089,6 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
 	}
 
 	/* Adjust by relative CPU power of the group */
-    // 计算group平均负载 NICE_0_LOAD == SCHED_LOAD_SCALE
 	// sgs->group_load += load;
     // load 是 weight 经过指数计算的来
 	// p->se.load.weight = prio_to_weight[p->static_prio - MAX_RT_PRIO];    // 对普通进程 prio_to_weight[nice]
