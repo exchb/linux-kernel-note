@@ -4235,6 +4235,8 @@ static inline void fix_small_imbalance(struct sd_lb_stats *sds,
 	unsigned int imbn = 2;
 	unsigned long scaled_busy_load_per_task;
 
+    // 如果最忙的group > this group的平均负载,则认为不平衡
+    // 这里的判断条件松得多
 	if (sds->this_nr_running) {
 		sds->this_load_per_task /= sds->this_nr_running;
 		if (sds->busiest_load_per_task >
@@ -4334,6 +4336,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
 		/*
 		 * Don't want to pull so many tasks that a group would go idle.
 		 */
+        // 计算最忙的group超过容量的大小
 		load_above_capacity = (sds->busiest_nr_running -
 						sds->busiest_group_capacity);
 
@@ -4450,7 +4453,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 	if (sds.this_load >= sds.max_load)
 		goto out_balanced;
 
-	sds.avg_load = (sched_load_scale * sds.total_load) / sds.total_pwr;
+	sds.avg_load = (SCHED_LOAD_SCALE * sds.total_load) / sds.total_pwr;
 
     // local group 比平均的group_load 大,认为已平衡
 	if (sds.this_load >= sds.avg_load)
