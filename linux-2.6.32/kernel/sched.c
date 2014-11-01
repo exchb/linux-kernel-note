@@ -1193,6 +1193,9 @@ static void resched_task(struct task_struct *p)
 		smp_send_reschedule(cpu);
 }
 
+// 首先resched_task 入参cpu上的curr
+// 然后判断入参cpu是不是本cpu,如果不是,
+// 扔ipi到入参cpu
 static void resched_cpu(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
@@ -3541,11 +3544,14 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
 		      struct sched_domain *sd, enum cpu_idle_type idle,
 		      int *all_pinned)
 {
-	const struct sched_class *class = sched_class_highest;
+	const struct sched_class *class = sched_class_highest; // rt_sched_class
 	unsigned long total_load_moved = 0;
 	int this_best_prio = this_rq->curr->prio;
 
 	do {
+        // 先保证实时进行的move,再cfs
+        // 不过有点逗着玩的是,sched_rt.c 里面的load_balance_rt直接返回0
+        // 还给注释 /* don't touch RT tasks */
 		total_load_moved +=
 			class->load_balance(this_rq, this_cpu, busiest,
 				max_load_move - total_load_moved,
@@ -3907,6 +3913,7 @@ unsigned long scale_rt_power(int cpu)
 }
 
 // cpu_power 代表该cpu当前能容纳CFS进程的能力
+// 算法看不太懂.....各种资料也只表达了一个计算方式...没有原因..
 static void update_cpu_power(struct sched_domain *sd, int cpu)
 {
 	unsigned long weight = sd->span_weight;
@@ -4025,7 +4032,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
          * 注释的意思是偏向本组的组
          * 下面有target_load和source_load的区分.
          *
-         * 用意是对local_group尽量抬升,另外的group尽量降低
+         * IMPORTENT : 用意是对local_group尽量抬升,另外的group尽量降低
          * 也就是尽量对local_group进行补偿
          * 为了不做load_balance
          */
@@ -4078,9 +4085,8 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
      * 这里的第一个cpu的判断比较迷惑,实际上就几种情况
      * 1. this_cpu idle 但是其他cpu不idle.那么this_cpu确实该做load_balance
      * 2. this_cpu 不idle 但是其他cpu idle.那么load_balance因该其他cpu做
-     * 3. 都idle或者都不idle的不限制
-     *
-     * 所以第一个idle的判断只是看当前的cpu是否适合做load balance
+     * 3. 所有cpu都idle,那么只有first_cpu会做负载均衡.这也限制了idle load balance只有一个cpu做
+     * 4. 所有cpu都不idle,那么balance_cpu = group_first_cpu,也限制了load_balance只有一个cpu做
      */
 	if (idle != CPU_NEWLY_IDLE && local_eroup &&
 	    balance_cpu != this_cpu && balance) {
@@ -4487,7 +4493,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
 			goto out_balanced;
 	}
 
-    // 只有这会进行load_balance
+    // 只有这会计算失衡量
 force_balance:
 	/* Looks like there is an imbalance. Compute it */
 	calculate_imbalance(&sds, this_cpu, imbalance);
@@ -4508,6 +4514,7 @@ ret:
 /*
  * find_busiest_queue - find the busiest runqueue among the cpus in group.
  */
+// 寻找最忙group的最大负载的cpu
 static struct rq *
 find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
 		   unsigned long imbalance, const struct cpumask *cpus)
@@ -4516,11 +4523,13 @@ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
 	unsigned long max_load = 0;
 	int i;
 
+    // 遍历busiest group的cpus
 	for_each_cpu(i, sched_group_cpus(group)) {
 		unsigned long power = power_of(i);
 		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
 		unsigned long wl;
 
+        // 判断cpu是否在线
 		if (!cpumask_test_cpu(i, cpus))
 			continue;
 
@@ -4531,6 +4540,7 @@ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
 		 * When comparing with imbalance, use weighted_cpuload()
 		 * which is not scaled with the cpu power.
 		 */
+        // 只有一个进程就跳过....(这要求太苛刻了...)
 		if (capacity && rq->nr_running == 1 && wl > imbalance)
 			continue;
 
@@ -4597,6 +4607,11 @@ redo:
 	group = find_busiest_group(sd, this_cpu, &imbalance, idle, &sd_idle,
 				   cpus, balance);
 
+    // 在 update_sg_lb_stats
+	// if (idle != CPU_NEWLY_IDLE && local_eroup &&
+	//     balance_cpu != this_cpu && balance) {
+	//  *balance = 0;
+    //  只有这个条件,balance会为0
 	if (*balance == 0)
 		goto out_balanced;
 
@@ -4616,6 +4631,7 @@ redo:
 	schedstat_add(sd, lb_imbalance[idle], imbalance);
 
 	ld_moved = 0;
+    // 最忙的rq进程数大于1
 	if (busiest->nr_running > 1) {
 		/*
 		 * Attempt to move tasks. If find_busiest_group has found
@@ -4623,8 +4639,11 @@ redo:
 		 * still unbalanced. ld_moved simply stays zero, so it is
 		 * correctly treated as an imbalance.
 		 */
+        // 关闭this_cpu的irq,并且锁this_cpu 和 busiest_cpu
 		local_irq_save(flags);
 		double_rq_lock(this_rq, busiest);
+
+        // 从最忙的rq移动进程到本rq
 		ld_moved = move_tasks(this_rq, this_cpu, busiest,
 				      imbalance, sd, idle, &all_pinned);
 		double_rq_unlock(this_rq, busiest);
@@ -5381,7 +5400,7 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 		if (atomic_read(&nohz.load_balancer) == -1) {
 			int ilb = find_new_ilb(cpu);
 
-            // 这是对find_new_ilb的错误处理
+            // ipi通知新选择的进程执行idl
 			if (ilb < nr_cpu_ids)
 				resched_cpu(ilb);
 		}
@@ -5419,12 +5438,14 @@ static inline void trigger_load_balance(struct rq *rq, int cpu)
 		return;
 #endif
 	/* Don't need to rebalance while attached to NULL domain */
-    // 本cpu没有加入任何domain,则不需要idl
-    // 没加入任何domain,是没有cpu负载的
-    // 另外,如果当前时间没到下一个该domain的idl周期,也不用idl
-    // 注意run_rebalance_domains不是必须是idl,如果一个进程不是idle_at_tick
-    // 也会走到这
-	if (time_after_eq(jiffies, rq->next_balance) && 
+    /*
+     * 本cpu没有加入任何domain,则不需要load balance
+     * 没加入任何domain,是没有cpu负载的
+     * 另外,如果当前时间没到下一个该domain的load balance周期,也不用
+     *
+     * 可以看到load balance的两种方式,周期时钟的load balance和nohz
+     */
+	if (time_after_eq(jiffies, rq->next_balance) &&
             likely(!on_null_domain(cpu)))
 		raise_softirq(SCHED_SOFTIRQ);           // -> run_rebalance_domains -> rebalance_domains
 }
