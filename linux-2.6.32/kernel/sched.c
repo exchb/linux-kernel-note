@@ -3430,12 +3430,14 @@ int can_migrate_task(struct task_struct *p, struct rq *rq, int this_cpu,
 	 * 2) cannot be migrated to this CPU due to cpus_allowed, or
 	 * 3) are cache-hot on their current CPU.
 	 */
+    // 判断进程是否可以在目标cpu上运行
 	if (!cpumask_test_cpu(this_cpu, &p->cpus_allowed)) {
 		schedstat_inc(p, se.nr_failed_migrations_affine);
 		return 0;
 	}
 	*all_pinned = 0;
 
+    // 如果进程是当前正在运行的进程,则不迁移(curr)
 	if (task_running(rq, p)) {
 		schedstat_inc(p, se.nr_failed_migrations_running);
 		return 0;
@@ -3447,6 +3449,13 @@ int can_migrate_task(struct task_struct *p, struct rq *rq, int this_cpu,
 	 * 2) too many balance attempts have failed.
 	 */
 
+    // 判断cache热度,这里是:
+    // now - exec_start(上一次执行时间) < sysctl_sched_migration_cost
+    // /proc/sys/kernel/sched_migration_cost_ns
+    // 即如果进程在cpu上的上一次执行时间隔得长,认为cache是冷的
+    //
+    // 如果cache是冷的,或者该调度域上load balance失败的次数过多,则认为可以迁移
+    // nr_balance_failed在移动失败的时候增加.失败一次加一个
 	tsk_cache_hot = task_hot(p, rq->clock_task, sd);
 	if (!tsk_cache_hot ||
 		sd->nr_balance_failed > sd->cache_nice_tries) {
@@ -3486,15 +3495,22 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
 	 */
 	p = iterator->start(iterator->arg);
 next:
+    // /proc/sys/kernel/sched_nr_migrate == 32
+    // 一次最多迁移这么多进程
 	if (!p || loops++ > sysctl_sched_nr_migrate)
 		goto out;
 
+    // 如果该进程超过剩余迁移量的两倍,则不pull这个进程
+    // 再判断下can_migrate_task,即判断cache热度,cpu亲和力
+    // 注意,正在该cpu上执行的进程是不会被pull的,这也是cache热度的保证之一
 	if ((p->se.load.weight >> 1) > rem_load_move ||
 	    !can_migrate_task(p, busiest, this_cpu, sd, idle, &pinned)) {
 		p = iterator->next(iterator->arg);
 		goto next;
 	}
 
+    // 送进程到其他cpu
+    // 检查是否可抢占对方cpu的curr
 	pull_task(busiest, p, this_rq, this_cpu);
 	pulled++;
 	rem_load_move -= p->se.load.weight;
@@ -3512,6 +3528,8 @@ next:
 	/*
 	 * We only want to steal up to the prescribed amount of weighted load.
 	 */
+    // 如果还有剩余的rem_load_move没有移动
+    // 继续移动进程
 	if (rem_load_move > 0) {
 		if (p->prio < *this_best_prio)
 			*this_best_prio = p->prio;
@@ -3529,6 +3547,7 @@ out:
 	if (all_pinned)
 		*all_pinned = pinned;
 
+    // 返回移动的负载量
 	return max_load_move - rem_load_move;
 }
 
@@ -4646,6 +4665,7 @@ redo:
 		double_rq_lock(this_rq, busiest);
 
         // 从最忙的rq移动进程到本rq
+        // 返回是否有进程移动.bool类型
 		ld_moved = move_tasks(this_rq, this_cpu, busiest,
 				      imbalance, sd, idle, &all_pinned);
 		double_rq_unlock(this_rq, busiest);
@@ -4670,6 +4690,7 @@ redo:
 		}
 	}
 
+    // 如果移动失败
 	if (!ld_moved) {
 		schedstat_inc(sd, lb_failed[idle]);
 		/*
@@ -4681,6 +4702,8 @@ redo:
 		if (idle != CPU_NEWLY_IDLE)
 			sd->nr_balance_failed++;
 
+        // 如果失败次数 > cache_nice_tries + 2 ,踢给migraten thread
+        // cache_nice_tries的值同样去topology.h里面翻,这个值为1
 		if (unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2)) {
 
 			spin_lock_irqsave(&busiest->lock, flags);
@@ -4689,7 +4712,7 @@ redo:
 			 * task on busiest cpu can't be moved to this_cpu
 			 */
 			if (!cpumask_test_cpu(this_cpu,
-					      &busiest->curr->cpus_allowed)) {
+					&busiest->curr->cpus_allowed)) {
 				spin_unlock_irqrestore(&busiest->lock, flags);
 				all_pinned = 1;
 				goto out_one_pinned;
@@ -8350,8 +8373,11 @@ static int __init migration_init(void)
 	/* Start one for the boot CPU: */
 	err = migration_call(&migration_notifier, CPU_UP_PREPARE, cpu);
 	BUG_ON(err == NOTIFY_BAD);
+
+    // cpu up的时候,给该cpu创建一个migration_thread,并且设置为SCHED_FIFO的实时进程
+    // 注意是实时进程...
 	migration_call(&migration_notifier, CPU_ONLINE, cpu);
-	register_cpu_notifier(&migration_notifier);
+	register_cpu_notifier(&migration_notifier);   // cpu notify链,获取cpu up的信息
 
 	return 0;
 }
