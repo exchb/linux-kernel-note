@@ -3549,9 +3549,11 @@ static int move_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
 	int this_best_prio = this_rq->curr->prio;
 
 	do {
-        // 先保证实时进行的move,再cfs
-        // 不过有点逗着玩的是,sched_rt.c 里面的load_balance_rt直接返回0
-        // 还给注释 /* don't touch RT tasks */
+        /*
+         * 先保证实时进行的move,再cfs
+         * 不过有点逗着玩的是,sched_rt.c 里面的load_balance_rt直接返回0
+         * 还给注释 don't touch RT tasks 
+         */
 		total_load_moved +=
 			class->load_balance(this_rq, this_cpu, busiest,
 				max_load_move - total_load_moved,
@@ -4652,6 +4654,10 @@ redo:
 		/*
 		 * some other cpu did the load balance for us.
 		 */
+        // 如果当前做ibl的cpu不是正在运行的cpu
+        // 这种情况只发生在ibl中(nohz)
+        // 是ibl的cpu替idle cpu 拉了进程过去.这个时候,就送一个
+        // ipi通知对方cpu有任务执行
 		if (ld_moved && this_cpu != smp_processor_id())
 			resched_cpu(this_cpu);
 

@@ -1952,6 +1952,9 @@ __load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
 			this_best_prio, &cfs_rq_iterator);
 }
 
+// 这个宏控制了组调度
+// 即cgroup
+// @caller move_task中,max_load_move = imbalance
 #ifdef CONFIG_FAIR_GROUP_SCHED
 static unsigned long
 load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
@@ -1966,6 +1969,7 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
 	rcu_read_lock();
 	update_h_load(busiest_cpu);
 
+    // 组调度自然要遍历组
 	list_for_each_entry_rcu(tg, &task_groups, list) {
 		struct cfs_rq *busiest_cfs_rq = tg->cfs_rq[busiest_cpu];
 		unsigned long busiest_h_load = busiest_cfs_rq->h_load;
@@ -1978,6 +1982,7 @@ load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
 		if (!busiest_cfs_rq->task_weight)
 			continue;
 
+        // 计算该组的最大移动负载量
 		rem_load = (u64)rem_load_move * busiest_weight;
 		rem_load = div_u64(rem_load, busiest_h_load + 1);
 
