@@ -2201,6 +2201,11 @@ struct migration_req {
  * The task's runqueue lock must be held.
  * Returns true if you have to wait for migration thread.
  */
+// 走这儿是主动送到cpu.
+// 进程执行exec,或者设置进程的cpu属性,都会走这
+// exec会选择最轻的cpu运行
+//
+// fork的时候是直接选择,不用走这
 static int
 migrate_task(struct task_struct *p, int dest_cpu, struct migration_req *req)
 {
@@ -3602,6 +3607,7 @@ iter_move_one_task(struct rq *this_rq, int this_cpu, struct rq *busiest,
 	int pinned = 0;
 
 	while (p) {
+        // 比起pull来,这而少了一个load的判断.条件减轻了
 		if (can_migrate_task(p, busiest, this_cpu, sd, idle, &pinned)) {
 			pull_task(busiest, p, this_rq, this_cpu);
 			/*
@@ -3611,6 +3617,7 @@ iter_move_one_task(struct rq *this_rq, int this_cpu, struct rq *busiest,
 			 */
 			schedstat_inc(sd, lb_gained[idle]);
 
+            // 只要能送一个,就返回
 			return 1;
 		}
 		p = iterator->next(iterator->arg);
@@ -4721,7 +4728,7 @@ redo:
             // 在这儿踢给migration_thread
 			if (!busiest->active_balance) {
 				busiest->active_balance = 1;
-				busiest->push_cpu = this_cpu;
+				busiest->push_cpu = this_cpu;  // 该值表示rq要送进程到这个cpu
 				active_balance = 1;
 			}
 			spin_unlock_irqrestore(&busiest->lock, flags);
@@ -4979,13 +4986,17 @@ static void idle_balance(int this_cpu, struct rq *this_rq)
  *
  * Called with busiest_rq locked.
  */
+// busiest_rq = this_rq
+// busiest_cpu = this_cpu
 static void active_load_balance(struct rq *busiest_rq, int busiest_cpu)
 {
+    // 获取目的cpu
 	int target_cpu = busiest_rq->push_cpu;
 	struct sched_domain *sd;
 	struct rq *target_rq;
 
 	/* Is there any task to move? */
+    // 只有一个进程,也不用动了
 	if (busiest_rq->nr_running <= 1)
 		return;
 
@@ -5004,12 +5015,14 @@ static void active_load_balance(struct rq *busiest_rq, int busiest_cpu)
 	update_rq_clock(target_rq);
 
 	/* Search for an sd spanning us and the target CPU. */
+    // 找目的cpu所在的sched_domain
 	for_each_domain(target_cpu, sd) {
 		if ((sd->flags & SD_LOAD_BALANCE) &&
 		    cpumask_test_cpu(busiest_cpu, sched_domain_span(sd)))
 				break;
 	}
 
+    // 找到了,就干
 	if (likely(sd)) {
 		schedstat_inc(sd, alb_count);
 
@@ -5270,9 +5283,8 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
         // domain 执行load balance 的时间间隔
 		interval = sd->balance_interval;
         // 如果当前运行的不是idle进程,则把时间间隔扩展
-        // 周期性空闲负载均衡,
         //
-        // TODO 扩展的目的
+        // 扩展的理念,如果cpu在忙,那么balance最好少做
 		if (idle != CPU_IDLE)
 			interval *= sd->busy_factor;
 
@@ -5308,6 +5320,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 		if (need_serialize)
 			spin_unlock(&balancing);
 out:
+        // 如果已经执行了load_balance,则设置next_balance
 		if (time_after(next_balance, sd->last_balance + interval)) {
 			next_balance = sd->last_balance + interval;
 			update_next_balance = 1;
@@ -5343,6 +5356,8 @@ static void run_rebalance_domains(struct softirq_action *h)
 	enum cpu_idle_type idle = this_rq->idle_at_tick ?
 						CPU_IDLE : CPU_NOT_IDLE;
 
+    // 如果是ibl,这个处理了ibl自己这个cpu
+    // 下面就处理别人的..
 	rebalance_domains(this_cpu, idle);
 
 #ifdef CONFIG_NO_HZ
@@ -5358,6 +5373,7 @@ static void run_rebalance_domains(struct softirq_action *h)
 		struct rq *rq;
 		int balance_cpu;
 
+        // 遍历非周期时钟的cpu们
 		for_each_cpu(balance_cpu, nohz.cpu_mask) {
 			if (balance_cpu == this_cpu)
 				continue;
@@ -5371,6 +5387,7 @@ static void run_rebalance_domains(struct softirq_action *h)
 			if (need_resched())
 				break;
 
+            // 给非周期时钟的cpu 执行load balance
 			rebalance_domains(balance_cpu, CPU_IDLE);
 
 			rq = cpu_rq(balance_cpu);
@@ -7824,6 +7841,8 @@ fail:
  * thread migration by bumping thread off CPU then 'pushing' onto
  * another runqueue.
  */
+// 当load balance失败时候,把load balance的任务踢给它
+// 走这儿是push模型,即推进程出去
 static int migration_thread(void *data)
 {
 	int badcpu;
@@ -7840,11 +7859,14 @@ static int migration_thread(void *data)
 
 		spin_lock_irq(&rq->lock);
 
+        // cpu 热插拔,判断cpu是否下线(下线了怎么还能执行进程....?)
+        // 热拔插还没支持吧?
 		if (cpu_is_offline(cpu)) {
 			spin_unlock_irq(&rq->lock);
 			break;
 		}
 
+        // 如果该rq做load balance失败
 		if (rq->active_balance) {
 			active_load_balance(rq, cpu);
 			rq->active_balance = 0;
