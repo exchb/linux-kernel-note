@@ -4718,6 +4718,7 @@ redo:
 				goto out_one_pinned;
 			}
 
+            // 在这儿踢给migration_thread
 			if (!busiest->active_balance) {
 				busiest->active_balance = 1;
 				busiest->push_cpu = this_cpu;
