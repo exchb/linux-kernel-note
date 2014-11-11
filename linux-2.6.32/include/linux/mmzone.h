@@ -195,6 +195,7 @@ struct per_cpu_pageset {
 
 #endif /* !__GENERATING_BOUNDS.H */
 
+// 内存域
 enum zone_type {
 #ifdef CONFIG_ZONE_DMA
 	/*
@@ -223,7 +224,8 @@ enum zone_type {
 	 * only able to do DMA to the lower 16M but also 32 bit devices that
 	 * can only do DMA areas below 4G.
 	 */
-	ZONE_DMA32,
+	ZONE_DMA32,   // 标记了使用32位地址字可寻址,适合DMZ的内存域
+                  // 32位上为0,AMD64 小于4G
 #endif
 	/*
 	 * Normal addressable memory is in ZONE_NORMAL. DMA operations can be
@@ -284,6 +286,7 @@ struct zone_reclaim_stat {
 	unsigned long		nr_saved_scan[NR_LRU_LISTS];
 };
 
+// 内存域数据结构
 struct zone {
 	/* Fields commonly accessed by the page allocator */
 
@@ -625,14 +628,17 @@ extern struct page *mem_map;
  * per-zone basis.
  */
 struct bootmem_data;
+
+// 节点数据结构
+// 每个节点关联到一个cpu
 typedef struct pglist_data {
-	struct zone node_zones[MAX_NR_ZONES];
-	struct zonelist node_zonelists[MAX_ZONELISTS];
-	int nr_zones;
+	struct zone node_zones[MAX_NR_ZONES];                       // 各内存域数组
+	struct zonelist node_zonelists[MAX_ZONELISTS];              // 备用节点列表
+	int nr_zones;                                               // 内存域数目
 #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
-	struct page *node_mem_map;
+	struct page *node_mem_map;                                  // 节点的物理域
 #ifdef CONFIG_CGROUP_MEM_RES_CTLR
-	struct page_cgroup *node_page_cgroup;
+	struct page_cgroup *node_page_cgroup;                       // 自举内存分配器 ?
 #endif
 #endif
 	struct bootmem_data *bdata;
@@ -646,11 +652,11 @@ typedef struct pglist_data {
 	 */
 	spinlock_t node_size_lock;
 #endif
-	unsigned long node_start_pfn;
+	unsigned long node_start_pfn;                                // 该节点的第一个页帧的逻辑编号,UMA 为0
 	unsigned long node_present_pages; /* total number of physical pages */
 	unsigned long node_spanned_pages; /* total size of physical page
 					     range, including holes */
-	int node_id;
+	int node_id;                                                 // 全局节点id
 	wait_queue_head_t kswapd_wait;
 	struct task_struct *kswapd;
 	int kswapd_max_order;
