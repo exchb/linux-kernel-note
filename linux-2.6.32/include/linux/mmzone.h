@@ -286,11 +286,16 @@ struct zone_reclaim_stat {
 	unsigned long		nr_saved_scan[NR_LRU_LISTS];
 };
 
-// 内存域数据结构
+// 内存域(内存分区)数据结构
 struct zone {
 	/* Fields commonly accessed by the page allocator */
 
 	/* zone watermarks, access with *_wmark_pages(zone) macros */
+    // 参考这一系列marco:  #define min_wmark_pages(z) (z->watermark[WMARK_MIN])
+    // 标示内存的三个水平线:
+    // WMARK_MIN: 空闲页低于该值表示内存紧张,急需内存页
+    // WMARK_LOW: 空闲页低于该值时,内核开始将页面换出到磁盘
+    // WMARK_HIGH: 表示内存充足
 	unsigned long watermark[NR_WMARK];
 
 	/*
@@ -298,6 +303,9 @@ struct zone {
 	 * when reading the number of free pages to avoid per-cpu counter
 	 * drift allowing watermarks to be breached
 	 */
+    // 当空闲页低于这个值时,采取一些额外的计算方法来计算空闲页总数,
+    // 避免内存飘逸导致水平线失效
+    // 上面的注释表达的意思是这样,没太明白 TODO
 	unsigned long percpu_drift_mark;
 
 	/*
@@ -630,9 +638,9 @@ extern struct page *mem_map;
 struct bootmem_data;
 
 // 节点数据结构
-// 每个节点关联到一个cpu
+// 每个节点关联到一个cpu(不是一个核)
 typedef struct pglist_data {
-	struct zone node_zones[MAX_NR_ZONES];                       // 各内存域数组
+	struct zone node_zones[MAX_NR_ZONES];                       // 各内存域(内存分区)数组
 	struct zonelist node_zonelists[MAX_ZONELISTS];              // 备用节点列表
 	int nr_zones;                                               // 内存域数目
 #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
