@@ -4828,9 +4828,9 @@ static int __init init_per_zone_wmark_min(void)
 
 	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
 	if (min_free_kbytes < 128)
-		min_free_kbytes = 128;
+		min_free_kbytes = 128;       // 最小128k
 	if (min_free_kbytes > 65536)
-		min_free_kbytes = 65536;
+		min_free_kbytes = 65536;     // 最多64M
 	setup_per_zone_wmarks();
 	setup_per_zone_lowmem_reserve();
 	setup_per_zone_inactive_ratio();

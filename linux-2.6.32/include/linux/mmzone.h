@@ -460,7 +460,7 @@ struct zone {
 } ____cacheline_internodealigned_in_smp;  // 编译关键字....cache 对齐..
 
 typedef enum {
-	ZONE_ALL_UNRECLAIMABLE,		/* all pages pinned */
+	ZONE_ALL_UNRECLAIMABLE,		/* all pages pinned */ // mlock调用
 	ZONE_RECLAIM_LOCKED,		/* prevents concurrent reclaim */
 	ZONE_OOM_LOCKED,		/* zone is in OOM killer zonelist */
 } zone_flags_t;
