@@ -316,18 +316,22 @@ struct zone {
 	 * on the higher zones). This array is recalculated at runtime if the
 	 * sysctl_lowmem_reserve_ratio sysctl changes.
 	 */
+    // 保留一些空闲页,用于关键性分配,无论如何都不会失败
 	unsigned long		lowmem_reserve[MAX_NR_ZONES];
 
 #ifdef CONFIG_NUMA
-	int node;
+	int node;           // NUMA节点
 	/*
 	 * zone reclaim becomes active if more unmapped pages exist.
 	 */
+    // 可回收页超过这个值时,对页面进行回收
 	unsigned long		min_unmapped_pages;
+    // slab的可回收页大于该值时,进行页面回收
 	unsigned long		min_slab_pages;
+
 	struct per_cpu_pageset	*pageset[NR_CPUS];
 #else
-	struct per_cpu_pageset	pageset[NR_CPUS];
+	struct per_cpu_pageset	pageset[NR_CPUS];   // cpu的页面缓存(冷/热 ?) TODO
 #endif
 	/*
 	 * free areas of different sizes
@@ -349,6 +353,8 @@ struct zone {
 #endif /* CONFIG_SPARSEMEM */
 
 
+    // padding 确保每一个自旋锁都处于自身的缓存行中
+    // 就是cache line
 	ZONE_PADDING(_pad1_)
 
 	/* Fields commonly accessed by the page reclaim scanner */
@@ -359,10 +365,14 @@ struct zone {
 
 	struct zone_reclaim_stat reclaim_stat;
 
+    // 上一次换页以来,多少页未能成功扫描
 	unsigned long		pages_scanned;	   /* since last reclaim */
+
+    // zone_flags_t
 	unsigned long		flags;		   /* zone flags, see below */
 
 	/* Zone statistics */
+    // 该内存区域的统计信息
 	atomic_long_t		vm_stat[NR_VM_ZONE_STAT_ITEMS];
 
 	/*
@@ -378,6 +388,7 @@ struct zone {
 	 * Access to both this field is quite racy even on uniprocessor.  But
 	 * it is expected to average out OK.
 	 */
+    // 上一次扫描操作扫描该内存域的优先级 try_to_free_pages
 	int prev_priority;
 
 	/*
@@ -414,6 +425,7 @@ struct zone {
 	 * primary users of these fields, and in mm/page_alloc.c
 	 * free_area_init_core() performs the initialization of them.
 	 */
+    // 用于等待该区域内存的进程
 	wait_queue_head_t	* wait_table;
 	unsigned long		wait_table_hash_nr_entries;
 	unsigned long		wait_table_bits;
@@ -435,14 +447,17 @@ struct zone {
 	 * frequently read in proximity to zone->lock.  It's good to
 	 * give them a chance of being in the same cacheline.
 	 */
+    // 包含空洞,总的页帧数
 	unsigned long		spanned_pages;	/* total size, including holes */
+    
+    // 不包含空洞,总的页帧数
 	unsigned long		present_pages;	/* amount of memory (excluding holes) */
 
 	/*
 	 * rarely used fields:
 	 */
 	const char		*name;
-} ____cacheline_internodealigned_in_smp;
+} ____cacheline_internodealigned_in_smp;  // 编译关键字....cache 对齐..
 
 typedef enum {
 	ZONE_ALL_UNRECLAIMABLE,		/* all pages pinned */
