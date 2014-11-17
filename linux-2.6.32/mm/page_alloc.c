@@ -4700,6 +4700,8 @@ static void setup_per_zone_lowmem_reserve(void)
  */
 void setup_per_zone_wmarks(void)
 {
+    // 获取min_free_kbytes的页数
+    // PAGE_SHIFT == 13 , PAGE_SIZE == 1 << PAGE_SHIFT == 8k
 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
 	unsigned long lowmem_pages = 0;
 	struct zone *zone;
