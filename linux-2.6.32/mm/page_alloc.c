@@ -4708,6 +4708,8 @@ void setup_per_zone_wmarks(void)
 	unsigned long flags;
 
 	/* Calculate total number of !ZONE_HIGHMEM pages */
+    // x64木有高端地址,3:1地址空间也多了...
+    // 计算了非高端内存域其他的内存域页面数
 	for_each_zone(zone) {
 		if (!is_highmem(zone))
 			lowmem_pages += zone->present_pages;
