@@ -170,9 +170,10 @@ enum zone_watermarks {
 struct per_cpu_pages {
 	int count;		/* number of pages in the list */
 	int high;		/* high watermark, emptying needed */
-	int batch;		/* chunk size for buddy add/remove */
+	int batch;		/* chunk size for buddy add/remove */ //填充一次cache页数的参考值
 
 	/* Lists of pages, one per migrate type stored on the pcp-lists */
+    // 热页在list头部,冷页在list尾部
 	struct list_head lists[MIGRATE_PCPTYPES];
 };
 
@@ -331,7 +332,8 @@ struct zone {
 
 	struct per_cpu_pageset	*pageset[NR_CPUS];
 #else
-	struct per_cpu_pageset	pageset[NR_CPUS];   // cpu的页面缓存(冷/热 ?) TODO
+    // 实现冷热分配器
+	struct per_cpu_pageset	pageset[NR_CPUS];   // cpu的页面缓存(NR_CPUS == 系统支持最大cpu数)
 #endif
 	/*
 	 * free areas of different sizes

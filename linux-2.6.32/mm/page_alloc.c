@@ -4679,6 +4679,7 @@ static void setup_per_zone_lowmem_reserve(void)
 				if (sysctl_lowmem_reserve_ratio[idx] < 1)
 					sysctl_lowmem_reserve_ratio[idx] = 1;
 
+                // 保留的内存页 每个zone页帧总数/sysctl_lowmem_reserve_ratio
 				lower_zone = pgdat->node_zones + idx;
 				lower_zone->lowmem_reserve[j] = present_pages /
 					sysctl_lowmem_reserve_ratio[idx];
