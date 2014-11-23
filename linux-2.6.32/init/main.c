@@ -517,6 +517,8 @@ static void __init mm_init(void)
 	vmalloc_init();
 }
 
+// @caller head.s
+// 初始化内核,到init进程启动结束
 asmlinkage void __init start_kernel(void)
 {
 	char * command_line;
@@ -551,13 +553,15 @@ asmlinkage void __init start_kernel(void)
 	// registe clockevents notifier chain
 	tick_init();
 	boot_cpu_init();
+
+    // 初始化持久映射和临时映射
 	page_address_init();	// mm/highmem.c : 409
 	printk(KERN_NOTICE "%s", linux_banner);
 	setup_arch(&command_line);	// arch/x86/kernel/setup.c
 	mm_init_owner(&init_mm, &init_task);
 	setup_command_line(command_line);
 	setup_nr_cpu_ids();
-	setup_per_cpu_areas();
+	setup_per_cpu_areas();    // per_cpu变量
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
 
 	build_all_zonelists();
