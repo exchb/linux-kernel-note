@@ -2355,6 +2355,7 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
 	zone_type++;
 
 	do {
+        // 就是enum的顺序,high_mem > normal > dma
 		zone_type--;
 		zone = pgdat->node_zones + zone_type;
 		if (populated_zone(zone)) {
@@ -2657,6 +2658,7 @@ static void set_zonelist_order(void)
 		current_zonelist_order = user_zonelist_order;
 }
 
+// uma 只调用一次
 static void build_zonelists(pg_data_t *pgdat)
 {
 	int j, node, load;
@@ -2667,6 +2669,7 @@ static void build_zonelists(pg_data_t *pgdat)
 	int order = current_zonelist_order;
 
 	/* initialize zonelists */
+    // zonerefs 数组在分配中回绕.
 	for (i = 0; i < MAX_ZONELISTS; i++) {
 		zonelist = pgdat->node_zonelists + i;
 		zonelist->_zonerefs[0].zone = NULL;
@@ -2674,7 +2677,7 @@ static void build_zonelists(pg_data_t *pgdat)
 	}
 
 	/* NUMA-aware ordering of nodes */
-	local_node = pgdat->node_id;
+	local_node = pgdat->node_id;    // 该节点id
 	load = nr_online_nodes;
 	prev_node = local_node;
 	nodes_clear(used_mask);
@@ -2687,7 +2690,7 @@ static void build_zonelists(pg_data_t *pgdat)
 	// while循环内貌似并没有这个逻辑，因为在find_next_best_node中
 	// 选择node时，是先选择distance小的节点返回的
 	while ((node = find_next_best_node(local_node, &used_mask)) >= 0) {
-		int distance = node_distance(local_node, node);
+		int distance = node_distance(local_node, node);    // numa distance
 
 		/*
 		 * If another node is sufficiently far away then it is better
@@ -2795,8 +2798,9 @@ static int __build_all_zonelists(void *dummy)
 #ifdef CONFIG_NUMA
 	memset(node_load, 0, sizeof(node_load));
 #endif
+    // 遍历系统所有活动节点,uma = 1
 	for_each_online_node(nid) {
-		pg_data_t *pgdat = NODE_DATA(nid);
+		pg_data_t *pgdat = NODE_DATA(nid); // UMA: &contig_page_data, NUMA每一个活动节点,for_each
 
 		build_zonelists(pgdat);
 		// TODO
@@ -2807,6 +2811,7 @@ static int __build_all_zonelists(void *dummy)
 
 void build_all_zonelists(void)
 {
+    // zonelist_order
 	set_zonelist_order();
 
 	if (system_state == SYSTEM_BOOTING) {
