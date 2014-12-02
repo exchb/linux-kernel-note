@@ -2634,6 +2634,7 @@ static int default_zonelist_order(void)
 	for_each_online_node(nid) {
 		low_kmem_size = 0;
 		total_size = 0;
+        // 与上面判断的区别是,只要有一处满足DMA/DMA32大于 70%的总值,就ORDER_NODE
 		for (zone_type = 0; zone_type < MAX_NR_ZONES; zone_type++) {
 			z = &NODE_DATA(nid)->node_zones[zone_type];
 			if (populated_zone(z)) {
@@ -2811,7 +2812,9 @@ static int __build_all_zonelists(void *dummy)
 
 void build_all_zonelists(void)
 {
-    // zonelist_order
+    // 会根据DMA/DMA32大小选择order是node还是zone, DMA/DMA32比较大的话倾向于NODE
+    // node方式会按优先级(high > normal > dma)先排本节点
+    // zone方式会按优先级依次在单节点上排列各节点相同类型的zone
 	set_zonelist_order();
 
 	if (system_state == SYSTEM_BOOTING) {
