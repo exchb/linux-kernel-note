@@ -2346,6 +2346,7 @@ static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
  *
  * Add all populated zones of a node to the zonelist.
  */
+// 把pgdat中的zone按优先级(high > normal > dma)的顺序放入zonelist中
 static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
 				int nr_zones, enum zone_type zone_type)
 {
@@ -2378,6 +2379,8 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
  *  If not NUMA, ZONELIST_ORDER_ZONE and ZONELIST_ORDER_NODE will create
  *  the same zonelist. So only NUMA can configure this param.
  */
+// NODE的情况, 先排列本节点上的所有zone,再排列其他节点上的zone
+// ZONE的情况, 按节点顺序排列同样优先级的zone
 #define ZONELIST_ORDER_DEFAULT  0
 #define ZONELIST_ORDER_NODE     1
 #define ZONELIST_ORDER_ZONE     2
@@ -2542,7 +2545,7 @@ static void build_zonelists_in_node_order(pg_data_t *pgdat, int node)
 	// 将node这个节点的所有zones加入到pgdat的zonelist中去
 	j = build_zonelists_node(NODE_DATA(node), zonelist, j,
 							MAX_NR_ZONES - 1);
-	// zonlist->_zonerefs的终止
+	// zonlist->_zonerefs的终止, 此时j = 最后一个
 	zonelist->_zonerefs[j].zone = NULL;
 	zonelist->_zonerefs[j].zone_idx = 0;
 }
@@ -2580,7 +2583,7 @@ static void build_zonelists_in_zone_order(pg_data_t *pgdat, int nr_nodes)
 	pos = 0;
 	for (zone_type = MAX_NR_ZONES - 1; zone_type >= 0; zone_type--) {
 		for (j = 0; j < nr_nodes; j++) {
-			node = node_order[j];
+			node = node_order[j];    // 按 distance排序的node
 			z = &NODE_DATA(node)->node_zones[zone_type];
 			if (populated_zone(z)) {
 				zoneref_set_zone(z,
@@ -2690,6 +2693,7 @@ static void build_zonelists(pg_data_t *pgdat)
 	// 先排列distance小的node，再排列distance大的node
 	// while循环内貌似并没有这个逻辑，因为在find_next_best_node中
 	// 选择node时，是先选择distance小的节点返回的
+    // 首先返回的是自己
 	while ((node = find_next_best_node(local_node, &used_mask)) >= 0) {
 		int distance = node_distance(local_node, node);    // numa distance
 
@@ -2713,15 +2717,16 @@ static void build_zonelists(pg_data_t *pgdat)
 		if (order == ZONELIST_ORDER_NODE)
 			build_zonelists_in_node_order(pgdat, node);
 		else
+            // 记录本次选择的node,供zone方法排序的时候使用
 			node_order[j++] = node;	/* remember order */
-	}
+	}  // endof while
 
 	if (order == ZONELIST_ORDER_ZONE) {
 		/* calculate node order -- i.e., DMA last! */
 		build_zonelists_in_zone_order(pgdat, j);
 	}
 
-	// 对本节点的各zone进行操作-将本节点的zone加入到pgdat的zonelist[1]
+	// 将 zoneref中记录的zone顺序填入pgdata中zonelist中
 	build_thisnode_zonelists(pgdat);
 }
 
