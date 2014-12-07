@@ -733,7 +733,8 @@ static struct dmi_system_id __initdata bad_bios_dmi_table[] = {
  *
  * Note: On x86_64, fixmaps are ready for use even before this is called.
  */
-
+// 编译时决定使用哪一个setup_arch函数
+// @caller start_kernel
 void __init setup_arch(char **cmdline_p)
 {
 #ifdef CONFIG_X86_32
@@ -746,6 +747,7 @@ void __init setup_arch(char **cmdline_p)
 	/* VMI may relocate the fixmap; do this before touching ioremap area */
 	vmi_init();
 
+    // 填cpudev和boot_cpu_data
 	early_cpu_init();	// print per-cpu info(vender ident)
 	early_ioremap_init();
 
@@ -789,6 +791,7 @@ void __init setup_arch(char **cmdline_p)
 	}
 #endif
 
+    // noop == no operation
 	x86_init.oem.arch_setup();	// noop operation
 
 	setup_memory_map();	// 整理e820的结果

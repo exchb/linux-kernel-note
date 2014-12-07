@@ -641,6 +641,7 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
 	if (!have_cpuid_p())
 		return;
 
+    // 调用cpuid指令
 	cpu_detect(c);
 
 	get_cpu_vendor(c);

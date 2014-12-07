@@ -557,7 +557,7 @@ asmlinkage void __init start_kernel(void)
     // 初始化持久映射和临时映射
 	page_address_init();	// mm/highmem.c : 409
 	printk(KERN_NOTICE "%s", linux_banner);
-	setup_arch(&command_line);	// arch/x86/kernel/setup.c
+	setup_arch(&command_line);	// arch/x86/kernel/setup.c 编译时候确定使用哪一个函数
 	mm_init_owner(&init_mm, &init_task);
 	setup_command_line(command_line);
 	setup_nr_cpu_ids();
