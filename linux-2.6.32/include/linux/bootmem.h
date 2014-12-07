@@ -27,9 +27,10 @@ extern unsigned long saved_max_pfn;
  * node_bootmem_map is a map pointer - the bits represent all physical 
  * memory pages (including holes) on the node.
  */
+// 为每一个节点提供一个该结构
 typedef struct bootmem_data {
 	unsigned long node_min_pfn;	// bootmem 的第一个页面
-	unsigned long node_low_pfn;	// 低端内存的顶点
+	unsigned long node_low_pfn;	// 低端内存的顶点(zone_normal的结束页)
 	void *node_bootmem_map;	// 位图，用于确定页面是否被分配
 	unsigned long last_end_off;
 	unsigned long hint_idx;
