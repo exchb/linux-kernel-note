@@ -1136,10 +1136,10 @@ u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
 # ifdef CONFIG_X86_PAE
 #  define MAX_ARCH_PFN		(1ULL<<(36-PAGE_SHIFT))	/* 2^24 = 16M */
 # else
-#  define MAX_ARCH_PFN		(1ULL<<(32-PAGE_SHIFT))	/* 2^20 = 1M */
+#  define MAX_ARCH_PFN		(1ULL<<(32-PAGE_SHIFT))	/* 2^20 = 1M */  // ==> 32位不开pae写死的4G
 # endif
 #else /* CONFIG_X86_32 */
-# define MAX_ARCH_PFN MAXMEM>>PAGE_SHIFT	/* 2^46 >> PAGE_SHIFT */
+# define MAX_ARCH_PFN MAXMEM>>PAGE_SHIFT	/* 2^46 >> PAGE_SHIFT */ // ==> 64位最大支持MAXMEM = 64T内存
 #endif
 
 /*
