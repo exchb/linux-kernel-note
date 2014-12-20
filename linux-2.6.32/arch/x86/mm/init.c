@@ -135,6 +135,9 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
  * the physical memory. To access them they are temporarily mapped.
  *
  */
+// @caller setup_arch in x86/kernel/setup.c
+// init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+// max_low_pfn = 最后一个页框号
 unsigned long __init_refok init_memory_mapping(unsigned long start,
 					       unsigned long end)
 {
@@ -188,7 +191,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 
 	/* head if not big page alignment ? */
 	start_pfn = start >> PAGE_SHIFT;
-	pos = start_pfn << PAGE_SHIFT;
+	pos = start_pfn << PAGE_SHIFT;    // 起始的物理地址
 #ifdef CONFIG_X86_32
 	/*
 	 * Don't use a large page for the first 2/4MB of memory
