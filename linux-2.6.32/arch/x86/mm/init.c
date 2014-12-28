@@ -202,6 +202,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 	if (pos == 0)
 		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
 	else
+        // for x86_32, PMD_SHIFT == PGDIR_SHIFT == 22
+        // PAGE_SHIFT == 12
 		// 先把当前PMD中所有的PTE(小于等于一个PMD)给收了
 		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
 				 << (PMD_SHIFT - PAGE_SHIFT);
