@@ -200,6 +200,9 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 	 * slowdowns.
 	 */
 	if (pos == 0)
+        // end_pfn == pmd的最大页框数(一共10位,只能表示这么多)
+        // for 32 位,也就是1024
+        // 在init_memory_mapping中, pos 就是 == 0
 		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
 	else
         // for x86_32, PMD_SHIFT == PGDIR_SHIFT == 22
