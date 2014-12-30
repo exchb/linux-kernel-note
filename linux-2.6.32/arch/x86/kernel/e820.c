@@ -1138,7 +1138,7 @@ u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
 # else
 #  define MAX_ARCH_PFN		(1ULL<<(32-PAGE_SHIFT))	/* 2^20 = 1M */  // ==> 32位不开pae写死的4G
 # endif
-#else /* CONFIG_X86_32 */
+#else /* CONFIG_X86_64 */
 # define MAX_ARCH_PFN MAXMEM>>PAGE_SHIFT	/* 2^46 >> PAGE_SHIFT */ // ==> 64位最大支持MAXMEM = 64T内存
 #endif
 
@@ -1181,9 +1181,8 @@ static unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
 }
 unsigned long __init e820_end_of_ram_pfn(void)
 {
-	/* in x86-64 : MAX_ARCH_PFN = 2^32 */
-	// MAX_ARCH_PFG = (MAXMEM(2^46) >> PAGE_SHIFT) = 2^32
-	// 2 ^ 32 : 2 ^ (10 + 10 + 10 + 2) =  4G
+    // for 32 MAX_ARCH_PFN == 2 << 20
+    // for pae == 2 << 24
 	// 总之就是取得 最大页框号，但是有几个条件
 	//	1. type ==  E820_RAM
 	//	2. 不能大于e820_end_pfn的第一个参数
