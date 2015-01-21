@@ -208,6 +208,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
         // for x86_32, PMD_SHIFT == PGDIR_SHIFT == 22
         // PAGE_SHIFT == 12
 		// 先把当前PMD中所有的PTE(小于等于一个PMD)给收了
+        // 这就是求pos开始到pmd结束的页框号
 		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
 				 << (PMD_SHIFT - PAGE_SHIFT);
 #else /* CONFIG_X86_64 */
