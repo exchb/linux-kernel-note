@@ -114,8 +114,8 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
 		/*
 		enum {
 			PG_LEVEL_NONE,
-			PG_LEVEL_4K,
-			PG_LEVEL_2M,
+			PG_LEVEL_4K,      // 64 -> 1 << PAGE_SHIFT = 4K
+			PG_LEVEL_2M,      // 64 -> 1 << PMD_SHIFT(21) = 2M
 			PG_LEVEL_1G,
 			PG_LEVEL_NUM
 		};
@@ -126,6 +126,7 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
 		nr_range++;
 	}
 
+    // 这奇葩的写法.....自加return,真容易误解...
 	return nr_range;
 }
 
