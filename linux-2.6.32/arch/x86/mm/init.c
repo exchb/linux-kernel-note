@@ -234,6 +234,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 	}
 
 	/* big page (2M) range */
+    // for 64 , 4 level, PMD_SHIFT = 21 = 2M
 	// 这儿就从一个PMD的边界开始收拾啦
 	// 上一个不完整的PMD不是已经在刚刚的小页(4K)处理逻辑中给收拾了么
 	// 其实，如下的这一段，是收拾当前PUD中剩下的中页（2M）
@@ -243,6 +244,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 #ifdef CONFIG_X86_32
 	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
 #else /* CONFIG_X86_64 */
+    // for x64 PUD_SHIFT = 30
 	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
 			 << (PUD_SHIFT - PAGE_SHIFT);
 	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
