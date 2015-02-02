@@ -230,7 +230,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 
 	if (start_pfn < end_pfn) {
 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
-		pos = end_pfn << PAGE_SHIFT;
+		pos = end_pfn << PAGE_SHIFT;    // 注意pos的更新
 	}
 
 	/* big page (2M) range */
