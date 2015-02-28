@@ -939,8 +939,10 @@ void __init setup_arch(char **cmdline_p)
 	/* need this before calling reserve_initrd */
 	// max_pfn是否超过1024×1024个页框，即可用内存是否超过4G
 	if (max_pfn > (1UL<<(32 - PAGE_SHIFT)))
+        // 如果没超,置为最后一个页帧的值
 		max_low_pfn = e820_end_of_low_ram_pfn();	// 1M个页框 4G空间
 	else
+        // 如果超过了,置为4G(最大4G)
 		max_low_pfn = max_pfn;
 
 	// 为什么要先+1呢?
