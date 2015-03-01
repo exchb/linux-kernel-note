@@ -39,7 +39,9 @@
  */
 extern unsigned long __FIXADDR_TOP;
 /*
-unsigned long __FIXADDR_TOP = 0xffff f000;
+ * unsigned long __FIXADDR_TOP = 0xffff f000;
+ * 离4G顶差1一个页面.4096 , 满4G : 0x100000000
+ * 这个页面是没用的..用于错误判断...is_err宏
 */
 #define FIXADDR_TOP	((unsigned long)__FIXADDR_TOP)
 
