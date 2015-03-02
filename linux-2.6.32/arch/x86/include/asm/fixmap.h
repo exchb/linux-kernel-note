@@ -76,6 +76,8 @@ extern unsigned long __FIXADDR_TOP;
  * TLB entries of such buffers will not be flushed across
  * task switches.
  */
+// 每个类型对应一个页框(fix_to_virt是按页面算的)
+// 固定映射的索引
 enum fixed_addresses {
 #ifdef CONFIG_X86_32
 	FIX_HOLE,
@@ -132,6 +134,8 @@ enum fixed_addresses {
 	 */
 #define NR_FIX_BTMAPS		64
 #define FIX_BTMAPS_SLOTS	4
+    // 255 == 0xff
+    // FIX_BTMAP 就等于256 ...
 	FIX_BTMAP_END = __end_of_permanent_fixed_addresses + 256 -
 			(__end_of_permanent_fixed_addresses & 255),
 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + NR_FIX_BTMAPS*FIX_BTMAPS_SLOTS - 1,
