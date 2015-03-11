@@ -126,7 +126,7 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
 		nr_range++;
 	}
 
-    // 这奇葩的写法.....自加return,真容易误解...
+    // .....自加return,真容易没看见...
 	return nr_range;
 }
 
@@ -138,7 +138,7 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
  */
 // @caller setup_arch in x86/kernel/setup.c
 // init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-// max_low_pfn = 最后一个页框号
+// max_low_pfn = 最后一个页框号，所以入参是物理的页框号，这里要把页框进行映射
 unsigned long __init_refok init_memory_mapping(unsigned long start,
 					       unsigned long end)
 {
@@ -202,7 +202,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 	 */
 	if (pos == 0)
         // end_pfn == pmd的最大页框数(一共10位,只能表示这么多)
-        // for 32 位,也就是1024
+        // for 32 位,也就是1024 (4M空间)
         // 在init_memory_mapping中, pos 就是 == 0
 		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
 	else

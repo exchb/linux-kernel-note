@@ -749,6 +749,9 @@ void __init setup_arch(char **cmdline_p)
 
     // 填cpudev和boot_cpu_data
 	early_cpu_init();	// print per-cpu info(vender ident)
+
+    // 1. 填了slot_virt数组
+    // 2. 填了bm_pte，也就是fixmap的pmd
 	early_ioremap_init();
 
 	ROOT_DEV = old_decode_dev(boot_params.hdr.root_dev);
@@ -939,14 +942,14 @@ void __init setup_arch(char **cmdline_p)
 	/* need this before calling reserve_initrd */
 	// max_pfn是否超过1024×1024个页框，即可用内存是否超过4G
 	if (max_pfn > (1UL<<(32 - PAGE_SHIFT)))
-        // 如果没超,置为最后一个页帧的值
+        // 如果超过了,置为4G(最大4G)
 		max_low_pfn = e820_end_of_low_ram_pfn();	// 1M个页框 4G空间
 	else
-        // 如果超过了,置为4G(最大4G)
+        // 如果没超,置为最后一个页帧的值
 		max_low_pfn = max_pfn;
 
 	// 为什么要先+1呢?
-	// 如果不-1,则可能__va的参数已经不在直接映射的范围之内了
+	// 如果不-1,则可能__va的参数已经不在直接映射的范围之内了(最后一个页帧的情况)
 	// 先-1,确保在__va的可处理范围，然后映射得到物理地址之后在+1
 	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;	// 512M  >> 12

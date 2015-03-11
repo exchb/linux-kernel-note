@@ -85,6 +85,7 @@
 /*
  * How many pointers will a page table level hold expressed in shift
  */
+// PAGE_SHIFT - 3 == 9....
 #define PTRS_PER_PTD_SHIFT	(PAGE_SHIFT-3)
 
 /*
