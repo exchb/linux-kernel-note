@@ -543,6 +543,8 @@ kernel_physical_mapping_init(unsigned long start,
 	end = (unsigned long)__va(end);
 
 	for (; start < end; start = next) {
+        // 计算start的pgd号(kernel的地址空间)
+        // start是mr.start 物理页
 		pgd_t *pgd = pgd_offset_k(start);
 		unsigned long pud_phys;
 		pud_t *pud;

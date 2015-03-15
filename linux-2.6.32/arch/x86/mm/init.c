@@ -34,7 +34,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 	unsigned long puds, pmds, ptes, tables, start;
 
 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
-	// 取得设置所有pud所需的pages
+	// 取得设置所有pud所需的pages(放这么多指针需要的空间)
 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
 
 	if (use_gbpages) {
@@ -182,6 +182,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 		__supported_pte_mask |= _PAGE_GLOBAL;
 	}
 
+    // 1 << 3
 	if (use_gbpages)
 		page_size_mask |= 1 << PG_LEVEL_1G;
 	if (use_pse)

@@ -1039,9 +1039,10 @@ u64 __init find_e820_area(u64 start, u64 end, u64 size, u64 align)
 		u64 addr, last;
 		u64 ei_last;
 
+        // 找usable的e820
 		if (ei->type != E820_RAM)
 			continue;
-		addr = round_up(ei->addr, align);
+		addr = round_up(ei->addr, align); //对齐操作(roundup,向上取整..)
 		ei_last = ei->addr + ei->size;
 		if (addr < start)
 			addr = round_up(start, align);

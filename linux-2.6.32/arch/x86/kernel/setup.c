@@ -808,8 +808,11 @@ void __init setup_arch(char **cmdline_p)
 
 	if (!boot_params.hdr.root_flags)
 		root_mountflags &= ~MS_RDONLY;
+    // 内核代码段开始
 	init_mm.start_code = (unsigned long) _text;
+    // 代码段结束
 	init_mm.end_code = (unsigned long) _etext;
+    // 数据段的定义
 	init_mm.end_data = (unsigned long) _edata;
 	init_mm.brk = _brk_end;
 
