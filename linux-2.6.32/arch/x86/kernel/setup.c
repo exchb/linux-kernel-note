@@ -954,6 +954,7 @@ void __init setup_arch(char **cmdline_p)
 	// 为什么要先+1呢?
 	// 如果不-1,则可能__va的参数已经不在直接映射的范围之内了(最后一个页帧的情况)
 	// 先-1,确保在__va的可处理范围，然后映射得到物理地址之后在+1
+//  #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
 	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;	// 512M  >> 12
 #endif

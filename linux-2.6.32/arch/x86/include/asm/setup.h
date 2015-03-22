@@ -11,6 +11,7 @@
 /*
  * Reserved space for vmalloc and iomap - defined in asm/page.h
  */
+// #define PFN_DOWN(x)	((x) >> PAGE_SHIFT)
 #define MAXMEM_PFN	PFN_DOWN(MAXMEM)
 #define MAX_NONPAE_PFN	(1 << 20)
 

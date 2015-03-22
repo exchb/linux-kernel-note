@@ -456,6 +456,8 @@ static inline int pgd_present(pgd_t pgd)
 
 static inline unsigned long pgd_page_vaddr(pgd_t pgd)
 {
+    // __va = 地址 + PAGE_OFFSET
+    // #define __PAGE_OFFSET           _AC(0xffff880000000001, UL)
 	return (unsigned long)__va((unsigned long)pgd_val(pgd) & PTE_PFN_MASK);
 }
 

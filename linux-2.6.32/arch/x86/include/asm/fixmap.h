@@ -113,6 +113,7 @@ enum fixed_addresses {
 	FIX_CYCLONE_TIMER, /*cyclone timer register*/
 #endif
 #ifdef CONFIG_X86_32
+    // 临时映射
 	FIX_KMAP_BEGIN,	/* reserved pte's for temporary kernel mappings */
 	FIX_KMAP_END = FIX_KMAP_BEGIN+(KM_TYPE_NR*NR_CPUS)-1,
 #ifdef CONFIG_PCI_MMCONFIG
@@ -154,7 +155,7 @@ extern void reserve_top_address(unsigned long reserve);
 #define FIXADDR_SIZE	(__end_of_permanent_fixed_addresses << PAGE_SHIFT)
 #define FIXADDR_BOOT_SIZE	(__end_of_fixed_addresses << PAGE_SHIFT)
 #define FIXADDR_START		(FIXADDR_TOP - FIXADDR_SIZE)
-#define FIXADDR_BOOT_START	(FIXADDR_TOP - FIXADDR_BOOT_SIZE)
+#define FIXADDR_BOOT_START	(FIXADDR_TOP - FIXADDR_BOOT_SIZE)   // 计算fixed映射开始的地址
 
 extern int fixmaps_set;
 

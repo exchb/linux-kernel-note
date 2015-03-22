@@ -30,6 +30,9 @@
  * hypervisor to fit.  Choosing 16 slots here is arbitrary, but it's
  * what Xen requires.
  */
+// 上部空间的空洞
+// http://blog.csdn.net/liminyu/article/details/12519729
+//
 #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
 
 // 向上对齐到配置的物理地址起点

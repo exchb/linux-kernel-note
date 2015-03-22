@@ -20,7 +20,7 @@
 #include <asm/tlb.h>
 #include <asm/tlbflush.h>
 
-unsigned int __VMALLOC_RESERVE = 128 << 20;
+unsigned int __VMALLOC_RESERVE = 128 << 20;   // 128M
 
 /*
  * Associate a virtual page frame with a given physical page frame 
