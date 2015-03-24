@@ -30,6 +30,7 @@
 extern bool __vmalloc_start_set; /* set once high_memory is set */
 #endif
 
+// 和物理内存有关,如果物理内存过1G，high_memory = 896M
 #define VMALLOC_START	((unsigned long)high_memory + VMALLOC_OFFSET)
 #ifdef CONFIG_X86_PAE
 #define LAST_PKMAP 512
@@ -50,7 +51,7 @@ extern bool __vmalloc_start_set; /* set once high_memory is set */
 #define MODULES_END	VMALLOC_END
 #define MODULES_LEN	(MODULES_VADDR - MODULES_END)
 
-// 表达内核能直接映射的区域
+// 表达内核能直接映射的区域, 这几个值都是定值,倒着计算回来的
 #define MAXMEM	(VMALLOC_END - PAGE_OFFSET - __VMALLOC_RESERVE)
 
 #endif /* _ASM_X86_PGTABLE_32_DEFS_H */

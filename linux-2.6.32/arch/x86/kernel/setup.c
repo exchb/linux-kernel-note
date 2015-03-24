@@ -935,6 +935,7 @@ void __init setup_arch(char **cmdline_p)
 	/* max_low_pfn get updated here */
 	find_low_pfn_range();
 #else
+    // 64为撒还要high_memory ....
 	num_physpages = max_pfn;
 
 	// apic : 高级可编程中断控制器
