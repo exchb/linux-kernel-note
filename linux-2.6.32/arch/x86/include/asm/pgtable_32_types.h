@@ -38,6 +38,7 @@ extern bool __vmalloc_start_set; /* set once high_memory is set */
 #define LAST_PKMAP 1024   // pkmap 永久映射，最多1024个页面
 #endif
 
+// PKMAP_BASE -> FIXADDR_START 永久内存映射
 #define PKMAP_BASE ((FIXADDR_BOOT_START - PAGE_SIZE * (LAST_PKMAP + 1)) \
 		    & PMD_MASK)
 
@@ -52,6 +53,7 @@ extern bool __vmalloc_start_set; /* set once high_memory is set */
 #define MODULES_LEN	(MODULES_VADDR - MODULES_END)
 
 // 表达内核能直接映射的区域, 这几个值都是定值,倒着计算回来的
+// 这个值比896肯定小
 #define MAXMEM	(VMALLOC_END - PAGE_OFFSET - __VMALLOC_RESERVE)
 
 #endif /* _ASM_X86_PGTABLE_32_DEFS_H */

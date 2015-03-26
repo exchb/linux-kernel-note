@@ -933,6 +933,7 @@ void __init setup_arch(char **cmdline_p)
 
 #ifdef CONFIG_X86_32
 	/* max_low_pfn get updated here */
+    // MAXMEM_PFN or max_pfn
 	find_low_pfn_range();
 #else
     // 64为撒还要high_memory ....
