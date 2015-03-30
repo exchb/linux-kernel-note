@@ -139,6 +139,8 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
 // @caller setup_arch in x86/kernel/setup.c
 // init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
 // max_low_pfn = 最后一个页框号，所以入参是物理的页框号，这里要把页框进行映射
+// 有高端内存下,max_low_pfn为MAXMEM_PFN,没有高端内存就是最后一个pfn
+// 64位没限制....
 unsigned long __init_refok init_memory_mapping(unsigned long start,
 					       unsigned long end)
 {
