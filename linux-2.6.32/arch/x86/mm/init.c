@@ -213,6 +213,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
         // PAGE_SHIFT == 12
 		// 先把当前PMD中所有的PTE(小于等于一个PMD)给收了
         // 这就是求pos开始到pmd结束的页框号
+        //
+        // x << (y - z) == (x << y) >> z 这个式子就这么解释的...
 		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
 				 << (PMD_SHIFT - PAGE_SHIFT);
 #else /* CONFIG_X86_64 */
@@ -245,6 +247,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
 			 << (PMD_SHIFT - PAGE_SHIFT);
 #ifdef CONFIG_X86_32
+    // 32位,就此结束
 	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
 #else /* CONFIG_X86_64 */
     // for x64 PUD_SHIFT = 30
@@ -258,7 +261,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 	//		说明剩下的页框尚不足一个PMD
 	if (start_pfn < end_pfn) {
 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
-				page_size_mask & (1<<PG_LEVEL_2M));
+				page_size_mask & (1<<PG_LEVEL_2M)); // 要么1G,要么2M,在机器上没见过1G的配置..
 		pos = end_pfn << PAGE_SHIFT;
 	}
 
@@ -288,6 +291,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 #endif
 
 	/* tail is not big page (2M) alignment */
+    // 4k 分页
 	start_pfn = pos>>PAGE_SHIFT;
 	end_pfn = end>>PAGE_SHIFT;
 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
