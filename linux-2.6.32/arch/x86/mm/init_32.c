@@ -289,6 +289,7 @@ repeat:
 #else
 		pmd_idx = 0;
 #endif
+        // 没有PAE , PTRS_PER_PMD = 1
 		for (; pmd_idx < PTRS_PER_PMD && pfn < end_pfn;
 		     pmd++, pmd_idx++) {
 			unsigned int addr = pfn * PAGE_SIZE + PAGE_OFFSET;
@@ -308,7 +309,8 @@ repeat:
 					__pgprot(PTE_IDENT_ATTR |
 						 _PAGE_PSE);
 
-				addr2 = (pfn + PTRS_PER_PTE-1) * PAGE_SIZE +
+                // PTRS_PER_PTE == 1024 for 2 - level
+				addr2 = (pfn + PTRS_PER_PTE -1) * PAGE_SIZE +
 					PAGE_OFFSET + PAGE_SIZE-1;
 
 				if (is_kernel_text(addr) ||
