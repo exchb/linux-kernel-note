@@ -95,10 +95,10 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
 		return pmd_table;
 	}
 #endif
-	pud = pud_offset(pgd, 0);
-	pmd_table = pmd_offset(pud, 0);
+	pud = pud_offset(pgd, 0);    // 32 nopud, 直接return pud_t,没有取地址过程
+	pmd_table = pmd_offset(pud, 0); // pmd_index 取得pmd号,加上pud的基址
 
-	return pmd_table;
+	return pmd_table;         // 这么一串下来,pmd_table == pgd的地址....
 }
 
 /*
@@ -107,6 +107,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
  */
 static pte_t * __init one_page_table_init(pmd_t *pmd)
 {
+    // 4k页,pmd为空
 	if (!(pmd_val(*pmd) & _PAGE_PRESENT)) {
 		pte_t *page_table = NULL;
 
@@ -120,6 +121,7 @@ static pte_t * __init one_page_table_init(pmd_t *pmd)
 		} else
 			page_table = (pte_t *)alloc_low_page();
 
+        // 虚拟分配...这是个空函数...
 		paravirt_alloc_pte(&init_mm, __pa(page_table) >> PAGE_SHIFT);
 		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_TABLE));
 		BUG_ON(page_table != pte_offset_kernel(pmd, 0));
@@ -276,10 +278,11 @@ kernel_physical_mapping_init(unsigned long start,
 repeat:
 	pages_2m = pages_4k = 0;
 	pfn = start_pfn;
+    // 有PAGE_OFFSET的存在, pfn = 0的时候,pgd_index = 768 , 一共1024
 	pgd_idx = pgd_index((pfn<<PAGE_SHIFT) + PAGE_OFFSET);
-	pgd = pgd_base + pgd_idx;
+	pgd = pgd_base + pgd_idx;   //页表基址 + offset -> 获取pgd起始地址(这是页表地址)
 	for (; pgd_idx < PTRS_PER_PGD; pgd++, pgd_idx++) {
-		pmd = one_md_table_init(pgd);
+		pmd = one_md_table_init(pgd);   // 获取该pgd对应的pmd起始(页表地址)
 
 		if (pfn >= end_pfn)
 			continue;
@@ -298,6 +301,7 @@ repeat:
 			 * Map with big pages if possible, otherwise
 			 * create normal page tables:
 			 */
+            // 2M页
 			if (use_pse) {
 				unsigned int addr2;
 				pgprot_t prot = PAGE_KERNEL_LARGE;
@@ -319,6 +323,7 @@ repeat:
 
 				pages_2m++;
 				if (mapping_iter == 1)
+                    // set_pmd -> pmd = pfn_pmd()
 					set_pmd(pmd, pfn_pmd(pfn, init_prot));
 				else
 					set_pmd(pmd, pfn_pmd(pfn, prot));
@@ -326,6 +331,7 @@ repeat:
 				pfn += PTRS_PER_PTE;
 				continue;
 			}
+            // 4K页
 			pte = one_page_table_init(pmd);
 
 			pte_ofs = pte_index((pfn<<PAGE_SHIFT) + PAGE_OFFSET);
@@ -659,7 +665,7 @@ void __init lowmem_pfn_init(void)
  */
 void __init highmem_pfn_init(void)
 {
-	max_low_pfn = MAXMEM_PFN;
+	max_low_pfn = MAXMEM_PFN;   // 内核直接映射的区域
 
 	if (highmem_pages == -1)
 		highmem_pages = max_pfn - MAXMEM_PFN;

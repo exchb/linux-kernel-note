@@ -34,7 +34,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 	unsigned long puds, pmds, ptes, tables, start;
 
 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
-	// 取得设置所有pud所需的pages(放这么多指针需要的空间)
+	// 取得设置所有pud所需的pages(放这么多指针需要的页数)
 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
 
 	if (use_gbpages) {
@@ -63,6 +63,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 
 #ifdef CONFIG_X86_32
 	/* for fixmap */
+    // 加上 fix_map地址
 	tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
 #endif
 
@@ -76,6 +77,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 #else
 	start = 0x8000;
 #endif
+    // 这个值代表容得下table的e820空间的起始地址
 	e820_table_start = find_e820_area(start, max_pfn_mapped<<PAGE_SHIFT,
 					tables, PAGE_SIZE);
 	if (e820_table_start == -1UL)

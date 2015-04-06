@@ -458,6 +458,8 @@ static inline unsigned long pgd_page_vaddr(pgd_t pgd)
 {
     // __va = 地址 + PAGE_OFFSET
     // #define __PAGE_OFFSET           _AC(0xffff880000000001, UL)
+    // pgd_val == pgd.pgd 取struct内的元素
+    // PTE_PFN_MASK == 0xffffffff for 32
 	return (unsigned long)__va((unsigned long)pgd_val(pgd) & PTE_PFN_MASK);
 }
 
