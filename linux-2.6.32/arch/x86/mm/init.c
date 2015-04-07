@@ -28,11 +28,15 @@ int direct_gbpages
 #endif
 ;
 
+// find_early_table_space(end, use_pse, use_gbpages);
+// from init_memory_mapping
+// end 是结束页帧对应的物理地址
 static void __init find_early_table_space(unsigned long end, int use_pse,
 					  int use_gbpages)
 {
 	unsigned long puds, pmds, ptes, tables, start;
 
+    // pgd是不需要空间的,在swapper_pg_dir里面已经分配了
 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
 	// 取得设置所有pud所需的pages(放这么多指针需要的页数)
 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
@@ -84,7 +88,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 		panic("Cannot find space for the kernel page tables");
 
 	e820_table_start >>= PAGE_SHIFT;
-	e820_table_end = e820_table_start;
+	e820_table_end = e820_table_start;   // 表示当前已用的e820空间的结束地址
 	e820_table_top = e820_table_start + (tables >> PAGE_SHIFT);
 
 	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
