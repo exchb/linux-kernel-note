@@ -69,6 +69,7 @@ static inline pmd_t *pmd_offset(pgd_t * dir, unsigned long address)
 #define pte_pfn(x)		(pte_val(x) >> PAGE_SHIFT)
 #define pfn_pte(pfn, prot)	__pte(((pfn) << PAGE_SHIFT) | pgprot_val(prot))
 #define pfn_pmd(pfn, prot)	__pmd(((pfn) << PAGE_SHIFT) | pgprot_val(prot))
+// copy from page_table_types.h #define pgprot_val(x)	((x).pgprot)
 
 #define PTE_FILE_MAX_BITS	29
 #define pte_to_pgoff(pte)	(((pte_val(pte) >> 2) & 0x7f) | (((pte_val(pte) >> 10)) << 7))

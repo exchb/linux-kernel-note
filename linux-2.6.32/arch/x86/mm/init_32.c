@@ -309,6 +309,8 @@ repeat:
 				 * first pass will use the same initial
 				 * identity mapping attribute + _PAGE_PSE.
 				 */
+                // typedef struct pgprot { pgprotval_t pgprot; } pgprot_t;
+                // typedef unsigned long	pgprotval_t;
 				pgprot_t init_prot =
 					__pgprot(PTE_IDENT_ATTR |
 						 _PAGE_PSE);
@@ -317,6 +319,7 @@ repeat:
 				addr2 = (pfn + PTRS_PER_PTE -1) * PAGE_SIZE +
 					PAGE_OFFSET + PAGE_SIZE-1;
 
+                // 如果addr在内核线性地址内
 				if (is_kernel_text(addr) ||
 				    is_kernel_text(addr2))
 					prot = PAGE_KERNEL_LARGE_EXEC;
@@ -324,6 +327,7 @@ repeat:
 				pages_2m++;
 				if (mapping_iter == 1)
                     // set_pmd -> pmd = pfn_pmd()
+                    // 就是把pfn转化为地址
 					set_pmd(pmd, pfn_pmd(pfn, init_prot));
 				else
 					set_pmd(pmd, pfn_pmd(pfn, prot));

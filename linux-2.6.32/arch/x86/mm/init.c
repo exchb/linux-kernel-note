@@ -38,7 +38,8 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 
     // pgd是不需要空间的,在swapper_pg_dir里面已经分配了
 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
-	// 取得设置所有pud所需的pages(放这么多指针需要的页数)
+	// 取得设置所有pud所需的pages(放这么多指针需要的空间)
+    // roundup 是向上取整, 没有除的过程
 	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
 
 	if (use_gbpages) {
@@ -89,7 +90,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 
 	e820_table_start >>= PAGE_SHIFT;
 	e820_table_end = e820_table_start;   // 表示当前已用的e820空间的结束地址
-	e820_table_top = e820_table_start + (tables >> PAGE_SHIFT);
+	e820_table_top = e820_table_start + (tables >> PAGE_SHIFT); // 换成了页数
 
 	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
 		end, e820_table_start << PAGE_SHIFT, e820_table_top << PAGE_SHIFT);
