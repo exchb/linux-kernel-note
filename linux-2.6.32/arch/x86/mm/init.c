@@ -37,6 +37,9 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
 	unsigned long puds, pmds, ptes, tables, start;
 
     // pgd是不需要空间的,在swapper_pg_dir里面已经分配了
+    // 为什么要这么分开算pud/pmd/pte, 要页表够这么多内存
+    // 比如2M空间，那么必须需要2M/PAGE_SIZE的pte
+    // 2M/PMD_SIZE的pmd,想想分级模型....
 	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
 	// 取得设置所有pud所需的pages(放这么多指针需要的空间)
     // roundup 是向上取整, 没有除的过程
@@ -182,6 +185,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 		printk(KERN_INFO "NX (Execute Disable) protection: active\n");
 
 	/* Enable PSE if available */
+    // 实测这个是开着的....
 	if (cpu_has_pse)
 		set_in_cr4(X86_CR4_PSE);
 
@@ -214,6 +218,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
         // end_pfn == pmd的最大页框数(一共10位,只能表示这么多)
         // for 32 位,也就是1024 (4M空间)
         // 在init_memory_mapping中, pos 就是 == 0
+        // PMD_SHIFT = 22
 		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
 	else
         // for x86_32, PMD_SHIFT == PGDIR_SHIFT == 22

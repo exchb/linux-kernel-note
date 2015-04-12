@@ -66,7 +66,7 @@ static __init void *alloc_low_page(void)
 	if (pfn >= e820_table_top)
 		panic("alloc_low_page: ran out of memory");
 
-	adr = __va(pfn * PAGE_SIZE);
+	adr = __va(pfn * PAGE_SIZE); // 转化为虚拟地址
 	memset(adr, 0, PAGE_SIZE);
 	return adr;
 }
@@ -107,7 +107,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
  */
 static pte_t * __init one_page_table_init(pmd_t *pmd)
 {
-    // 4k页,pmd为空
+    // 判断了pte是不是在内存中
 	if (!(pmd_val(*pmd) & _PAGE_PRESENT)) {
 		pte_t *page_table = NULL;
 
@@ -119,10 +119,11 @@ static pte_t * __init one_page_table_init(pmd_t *pmd)
 				page_table =
 				(pte_t *)alloc_bootmem_pages(PAGE_SIZE);
 		} else
+            // 这货按页分配，4k页，1024个指针完全没问题啊....
 			page_table = (pte_t *)alloc_low_page();
 
-        // 虚拟分配...这是个空函数...
 		paravirt_alloc_pte(&init_mm, __pa(page_table) >> PAGE_SHIFT);
+	    // __pmd : return (pmd_t) { val };
 		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_TABLE));
 		BUG_ON(page_table != pte_offset_kernel(pmd, 0));
 	}
@@ -280,9 +281,13 @@ repeat:
 	pfn = start_pfn;
     // 有PAGE_OFFSET的存在, pfn = 0的时候,pgd_index = 768 , 一共1024
 	pgd_idx = pgd_index((pfn<<PAGE_SHIFT) + PAGE_OFFSET);
-	pgd = pgd_base + pgd_idx;   //页表基址 + offset -> 获取pgd起始地址(这是页表地址)
+	pgd = pgd_base + pgd_idx;   //页表基址 + offset -> 获取pgd的idx项页表地址
 	for (; pgd_idx < PTRS_PER_PGD; pgd++, pgd_idx++) {
-		pmd = one_md_table_init(pgd);   // 获取该pgd对应的pmd起始(页表地址)
+        // 获取该pgd对应的pmd起始
+        // 32没有pud,除了PAE的情况，没有pmd
+        // 所以这儿还是pgd的idx项页表地址
+        // 如果是pae的情况，那么得给pmd分配空间
+		pmd = one_md_table_init(pgd);
 
 		if (pfn >= end_pfn)
 			continue;
@@ -292,7 +297,7 @@ repeat:
 #else
 		pmd_idx = 0;
 #endif
-        // 没有PAE , PTRS_PER_PMD = 1
+        // 没有PAE , PTRS_PER_PMD = 1, 有pae 512
 		for (; pmd_idx < PTRS_PER_PMD && pfn < end_pfn;
 		     pmd++, pmd_idx++) {
 			unsigned int addr = pfn * PAGE_SIZE + PAGE_OFFSET;
@@ -301,7 +306,7 @@ repeat:
 			 * Map with big pages if possible, otherwise
 			 * create normal page tables:
 			 */
-            // 2M页
+            // 第一个分区是4k页，第二个才是2M(如果有pse)
 			if (use_pse) {
 				unsigned int addr2;
 				pgprot_t prot = PAGE_KERNEL_LARGE;
@@ -327,7 +332,7 @@ repeat:
 				pages_2m++;
 				if (mapping_iter == 1)
                     // set_pmd -> pmd = pfn_pmd()
-                    // 就是把pfn转化为地址
+                    // 就是把pfn转化为地址, 给这个pmd指针
 					set_pmd(pmd, pfn_pmd(pfn, init_prot));
 				else
 					set_pmd(pmd, pfn_pmd(pfn, prot));
@@ -335,9 +340,10 @@ repeat:
 				pfn += PTRS_PER_PTE;
 				continue;
 			}
-            // 4K页
+            // 4K页, 创建一个page_table给pmd
 			pte = one_page_table_init(pmd);
 
+            // 得到pfn在page_table的位置(一一映射)
 			pte_ofs = pte_index((pfn<<PAGE_SHIFT) + PAGE_OFFSET);
 			pte += pte_ofs;
 			for (; pte_ofs < PTRS_PER_PTE && pfn < end_pfn;
@@ -354,11 +360,13 @@ repeat:
 
 				pages_4k++;
 				if (mapping_iter == 1)
+                    // pfn_pte设置pte.val, 然后
+                    // * pte = pfn_pte
 					set_pte(pte, pfn_pte(pfn, init_prot));
 				else
 					set_pte(pte, pfn_pte(pfn, prot));
 			}
-		}
+		} // end of for (; pmd_idx < PTRS_PER_PMD && pfn < end_pfn;
 	}
 	if (mapping_iter == 1) {
 		/*
