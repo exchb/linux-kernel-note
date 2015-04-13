@@ -555,6 +555,7 @@ kernel_physical_mapping_init(unsigned long start,
 
 		if (pgd_val(*pgd)) {
 			// 逐级设置PUD、PMD、PTE
+            // 四级页表果然比二级好看得多...
 			last_map_addr = phys_pud_update(pgd, __pa(start),
 						 __pa(end), page_size_mask);
 			continue;
