@@ -112,6 +112,8 @@ startup_64:
 
 	/* Fixup the physical addresses in the page table
 	 */
+    // init_level4_pgt 在pgtable_64中定义,并且
+    // #define swapper_pg_dir init_level4_pgt
 	addq	%rbp, init_level4_pgt + 0(%rip)
 	/*
 	 * L4_PAGE_OFFSET是直接映射的区间的起始地址的PML4的index
