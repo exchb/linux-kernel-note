@@ -453,6 +453,7 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
 	unsigned long last_map_addr = end;
 	int i = pud_index(addr);
 
+    // #define PTRS_PER_PUD	512
 	for (; i < PTRS_PER_PUD; i++, addr = (addr & PUD_MASK) + PUD_SIZE) {
 		unsigned long pmd_phys;
 		pud_t *pud = pud_page + pud_index(addr);
@@ -545,6 +546,7 @@ kernel_physical_mapping_init(unsigned long start,
 	for (; start < end; start = next) {
         // 计算start的pgd号(kernel的地址空间)
         // start是mr.start 物理页
+        // pgd_offset_k是相对kernel的pgd偏移,64位见mm.txt
 		pgd_t *pgd = pgd_offset_k(start);
 		unsigned long pud_phys;
 		pud_t *pud;

@@ -722,6 +722,7 @@ void __init find_low_pfn_range(void)
 		highmem_pfn_init();
 }
 
+//caller: initmem_init(0, max_pfn);
 #ifndef CONFIG_NEED_MULTIPLE_NODES
 void __init initmem_init(unsigned long start_pfn,
 				  unsigned long end_pfn)

@@ -23,6 +23,7 @@
 /*
  * void protected_mode_jump(u32 entrypoint, u32 bootparams);
  */
+// linux fastcall : 3个参数,依次是EAX, EDX, ECX
 GLOBAL(protected_mode_jump)
 	# %edx，第二个参数， boot_parmas地址, 加载到%esi
 	movl	%edx, %esi		# Pointer to boot_params table
@@ -96,7 +97,7 @@ GLOBAL(in_pm32)
 	# Set up LDTR to make Intel VT happy
 	lldt	%cx
 
-	jmpl	*%eax			# Jump to the 32-bit entrypoint
+	jmpl	%eax			# Jump to the 32-bit entrypoint
 							# 跳转到code32_start吧,其实此前已经进入保护模式，但
 							#		这儿之后才开始执行真正有意义的保护模式代码
 							# %eax是 protected_mode_jump的第一个参数

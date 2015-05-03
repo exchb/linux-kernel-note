@@ -1211,6 +1211,7 @@ int __init e820_find_active_region(const struct e820entry *ei,
 	*ei_endpfn = round_down(ei->addr + ei->size, align) >> PAGE_SHIFT;
 
 	/* Skip map entries smaller than a page */
+    // 跳过比一个页面还小的内存区域,看上面的round_up和round_down对齐
 	if (*ei_startpfn >= *ei_endpfn)
 		return 0;
 

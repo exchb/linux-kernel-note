@@ -87,6 +87,7 @@ startup_64:
 	 *
 	 * 得到的加载地址存储于%rbp中, 保护模式下的加载地址
 	 */
+    // __START_KERNEL_map就是分界点,往前是给用户空间,往后给内核
 	subq	$_text - __START_KERNEL_map, %rbp
 
 	/* Is the address not 2M aligned? */
