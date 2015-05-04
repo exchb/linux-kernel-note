@@ -1199,6 +1199,7 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
  * Finds an active region in the address range from start_pfn to last_pfn and
  * returns its range in ei_startpfn and ei_endpfn for the e820 entry.
  */
+// 这样的查找是查找在start_pfn,last_pfn之间的e820entry,只要有一部分符合都可以
 int __init e820_find_active_region(const struct e820entry *ei,
 				  unsigned long start_pfn,
 				  unsigned long last_pfn,
@@ -1216,11 +1217,16 @@ int __init e820_find_active_region(const struct e820entry *ei,
 		return 0;
 
 	/* Skip if map is outside the node */
+    // 不符合查找条件
+    // 1. 不是e820 ram
+    // 2. start比ei的end还大
+    // 3. end比ei的start还小
 	if (ei->type != E820_RAM || *ei_endpfn <= start_pfn ||
 				    *ei_startpfn >= last_pfn)
 		return 0;
 
 	/* Check for overlaps */
+    // 对齐入参
 	if (*ei_startpfn < start_pfn)
 		*ei_startpfn = start_pfn;
 	if (*ei_endpfn > last_pfn)
