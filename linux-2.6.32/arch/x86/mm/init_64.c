@@ -585,11 +585,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn)
 	// bootmap_size是描述所有的物理内存页帧需要的物理内存页数目
 	// 描述pages所需的位图占用的物理内存页面
 	bootmap_size = bootmem_bootmap_pages(end_pfn)<<PAGE_SHIFT;
+    // 找能包含这个位图大小的e820空间
 	bootmap = find_e820_area(0, end_pfn<<PAGE_SHIFT, bootmap_size,
 				 PAGE_SIZE);
 	if (bootmap == -1L)
 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
 	/* don't touch min_low_pfn */
+// init_bootmem_node(pg_data_t *pgdat, unsigned long freepfn,
+// unsigned long startpfn, unsigned long endpfn)
 	bootmap_size = init_bootmem_node(NODE_DATA(0), bootmap >> PAGE_SHIFT,
 					 0, end_pfn);
 	e820_register_active_regions(0, start_pfn, end_pfn);

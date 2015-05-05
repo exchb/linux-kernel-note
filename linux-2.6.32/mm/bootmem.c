@@ -65,6 +65,7 @@ static unsigned long __init bootmap_bytes(unsigned long pages)
  * @pages: number of pages the bitmap has to represent
  */
 // 计算描述pages个页帧需要多少个物理页面
+// 用bitmap描述的,一个物理页能放4096 * 8的页面数
 unsigned long __init bootmem_bootmap_pages(unsigned long pages)
 {
 	unsigned long bytes = bootmap_bytes(pages);

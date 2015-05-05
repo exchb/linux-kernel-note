@@ -1019,7 +1019,7 @@ void __init setup_arch(char **cmdline_p)
 	acpi_numa_init();
 #endif
 
-	// 为每个节点设置pgdata_t， 配置启动内存分配器
+    // 初始化内存分配器
 	initmem_init(0, max_pfn);
 
 #ifdef CONFIG_ACPI_SLEEP

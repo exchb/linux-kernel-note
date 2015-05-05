@@ -4078,18 +4078,19 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 	mminit_validate_memmodel_limits(&start_pfn, &end_pfn);
 
 	/* Merge with existing active regions if possible */
+    // 如果可以的话,和现有的active region合并
+    // 这儿只是合并的代码.如果没有下面会直接设置
 	for (i = 0; i < nr_nodemap_entries; i++) {
 		if (early_node_map[i].nid != nid)
 			continue;
 
 		/* Skip if an existing region covers this new one */
+        // 入参范围包含在当前已有的节点内
 		if (start_pfn >= early_node_map[i].start_pfn &&
 				end_pfn <= early_node_map[i].end_pfn)
 			return;
 
 		/* Merge forward if suitable */
-		// 为什么两种merge方向，只选一个呢?
-		// 如果start_pfn小于 early_node_map[i].start_pfn呢？不处理?
 		if (start_pfn <= early_node_map[i].end_pfn &&
 				end_pfn > early_node_map[i].end_pfn) {
 			early_node_map[i].end_pfn = end_pfn;
@@ -4097,7 +4098,9 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 		}
 
 		/* Merge backward if suitable */
-		// BUG?
+		// 这儿可能是个bug,往前合并应该是
+        // start_pfn < early_node_map[i].start_pfn时候设置
+        // 3.x内核已经没有这个函数了
 		if (start_pfn < early_node_map[i].end_pfn &&
 				end_pfn >= early_node_map[i].start_pfn) {
 			early_node_map[i].start_pfn = start_pfn;
@@ -4113,9 +4116,11 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 		return;
 	}
 
+    // 如果不合并,会来到这儿,这会create一个新的.
 	early_node_map[i].nid = nid;
 	early_node_map[i].start_pfn = start_pfn;
 	early_node_map[i].end_pfn = end_pfn;
+    //这个跟MAX_ACTIVE_REGIONS不是一个值, 记录的当前最大值
 	nr_nodemap_entries = i + 1;
 }
 

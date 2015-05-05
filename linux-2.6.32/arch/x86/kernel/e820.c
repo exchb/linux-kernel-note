@@ -1243,7 +1243,10 @@ void __init e820_register_active_regions(int nid, unsigned long start_pfn,
 	unsigned long ei_endpfn;
 	int i;
 
+    // 这样会把所有的节点给nid 0 ...
 	for (i = 0; i < e820.nr_map; i++)
+        // 找符合条件的e820区域
+        // 条件就是该区域的一部分或者全部在(start, end)内
 		if (e820_find_active_region(&e820.map[i],
 					    start_pfn, last_pfn,
 					    &ei_startpfn, &ei_endpfn))
