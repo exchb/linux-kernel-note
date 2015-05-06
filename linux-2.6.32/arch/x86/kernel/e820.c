@@ -747,6 +747,7 @@ struct early_res {
 	char name[16];
 	char overlap_ok;
 };
+// 实测了一下, 这只会初始化early_res[0]
 static struct early_res early_res[MAX_EARLY_RES] __initdata = {
 	{ 0, PAGE_SIZE, "BIOS data page" },	/* BIOS data page */
 	{}

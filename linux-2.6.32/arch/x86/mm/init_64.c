@@ -595,6 +595,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn)
 	/* don't touch min_low_pfn */
     // 将bdata : NODE_DATA(0)插入到bata_list中去，按照node_min_pfn排序
     // 并且置bdata->node_bootmem_map 0xff
+    // NODE_DATA(0) 在没有NUMA下就是contig_node_data(mmzone.h)
 	bootmap_size = init_bootmem_node(NODE_DATA(0), bootmap >> PAGE_SHIFT,
 					 0, end_pfn);
     // 同32位的注册,start,end之间的空间给了early_node_map:nid 0
