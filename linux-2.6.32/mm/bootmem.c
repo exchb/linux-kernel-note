@@ -93,6 +93,7 @@ static void __init link_bootmem(bootmem_data_t *bdata)
 /*
  * Called once to set up the allocator itself.
  */
+// mapstart 是freepfn,即initmem_init中寻找的bootmap
 static unsigned long __init init_bootmem_core(bootmem_data_t *bdata,
 	unsigned long mapstart, unsigned long start, unsigned long end)
 {
@@ -105,15 +106,14 @@ static unsigned long __init init_bootmem_core(bootmem_data_t *bdata,
 	bdata->node_low_pfn = end;
 	link_bootmem(bdata);	// 将bdata插入到bata_list中去，按照node_min_pfn排序
 
-	////////////////////////////////////////////////////////////
 	/*
 	 * Initially all pages are reserved - setup_arch() has to
 	 * register free RAM areas explicitly.
 	 */
 	// 位图管理会将所有页面标记为1
 	mapsize = bootmap_bytes(end - start);
+    // 在这个mapsize的都置为了1,表示已经分配,后面会free
 	memset(bdata->node_bootmem_map, 0xff, mapsize);
-	///////////////////////////////////////////////////////////
 
 	bdebug("nid=%td start=%lx map=%lx end=%lx mapsize=%lx\n",
 		bdata - bootmem_node_data, start, mapstart, end, mapsize);
@@ -278,6 +278,7 @@ static int __init __reserve(bootmem_data_t *bdata, unsigned long sidx,
 	return 0;
 }
 
+// mark_bootmem_node(pgdat->bdata, start, end, 0, 0);
 static int __init mark_bootmem_node(bootmem_data_t *bdata,
 				unsigned long start, unsigned long end,
 				int reserve, int flags)
@@ -296,6 +297,7 @@ static int __init mark_bootmem_node(bootmem_data_t *bdata,
 	if (reserve)
 		return __reserve(bdata, sidx, eidx, flags);
 	else
+        // free表示未分配
 		__free(bdata, sidx, eidx);
 	return 0;
 }

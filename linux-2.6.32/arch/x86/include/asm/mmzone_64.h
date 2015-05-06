@@ -43,7 +43,7 @@ static inline __attribute__((pure)) int phys_to_nid(unsigned long addr)
 #ifdef CONFIG_NUMA_EMU
 #define FAKE_NODE_MIN_SIZE	(64 * 1024 * 1024)
 #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
-#endif
+#endif  /* CONFIG_NUMA_EMU */
 
-#endif
+#endif  /* CONFIG_NUMA */
 #endif /* _ASM_X86_MMZONE_64_H */

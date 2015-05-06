@@ -3483,6 +3483,8 @@ bool __meminit early_pfn_in_nid(unsigned long pfn, int node)
  * add_active_ranges() contain no holes and may be freed, this
  * this function may be used instead of calling free_bootmem() manually.
  */
+// @caller initmem_init in x64
+// free_bootmem_with_active_regions(0, end_pfn);
 void __init free_bootmem_with_active_regions(int nid,
 						unsigned long max_low_pfn)
 {
@@ -3503,8 +3505,8 @@ void __init free_bootmem_with_active_regions(int nid,
 		size_pages = end_pfn - early_node_map[i].start_pfn;
 		// 标记范围内的页面为可用(可分配)
 		// 核心是：mark_bootmem_node
-		//	主要是清除对应的位图标志bdata->node_bootmem_map
-		//	注意并不是struct page结构体里面的标志(页面属性)
+		// 主要是清除对应的位图标志bdata->node_bootmem_map
+		// 注意并不是struct page结构体里面的标志(页面属性)
 		free_bootmem_node(NODE_DATA(early_node_map[i].nid),
 				PFN_PHYS(early_node_map[i].start_pfn),
 				size_pages << PAGE_SHIFT);
@@ -4117,6 +4119,7 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 	}
 
     // 如果不合并,会来到这儿,这会create一个新的.
+    // 如果内存空洞比较大,很可能造一堆同样nid的节点
 	early_node_map[i].nid = nid;
 	early_node_map[i].start_pfn = start_pfn;
 	early_node_map[i].end_pfn = end_pfn;

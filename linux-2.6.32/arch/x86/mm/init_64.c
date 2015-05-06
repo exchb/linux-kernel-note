@@ -578,6 +578,8 @@ kernel_physical_mapping_init(unsigned long start,
 }
 
 #ifndef CONFIG_NUMA
+// @caller setup_arch : start_pfn = 0, endpfn = max_pfn
+// 64位整合了32位的initmem_init和setup_bootmem_allocator到一个函数 - -
 void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn)
 {
 	unsigned long bootmap_size, bootmap;
@@ -585,16 +587,17 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn)
 	// bootmap_size是描述所有的物理内存页帧需要的物理内存页数目
 	// 描述pages所需的位图占用的物理内存页面
 	bootmap_size = bootmem_bootmap_pages(end_pfn)<<PAGE_SHIFT;
-    // 找能包含这个位图大小的e820空间
+    // 找能包含这个位图大小的e820空间,返回该e820对齐后的start addr
 	bootmap = find_e820_area(0, end_pfn<<PAGE_SHIFT, bootmap_size,
 				 PAGE_SIZE);
 	if (bootmap == -1L)
 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
 	/* don't touch min_low_pfn */
-// init_bootmem_node(pg_data_t *pgdat, unsigned long freepfn,
-// unsigned long startpfn, unsigned long endpfn)
+    // 将bdata : NODE_DATA(0)插入到bata_list中去，按照node_min_pfn排序
+    // 并且置bdata->node_bootmem_map 0xff
 	bootmap_size = init_bootmem_node(NODE_DATA(0), bootmap >> PAGE_SHIFT,
 					 0, end_pfn);
+    // 同32位的注册,start,end之间的空间给了early_node_map:nid 0
 	e820_register_active_regions(0, start_pfn, end_pfn);
 	/*将活动内存区对应位图相关位置0，表示可被分配的*/ 
 	free_bootmem_with_active_regions(0, end_pfn);
