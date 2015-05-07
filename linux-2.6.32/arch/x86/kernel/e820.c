@@ -820,6 +820,7 @@ static void __init drop_overlaps_that_are_ok(u64 start, u64 end)
 		r = &early_res[i];
 
 		/* Continue past non-overlapping ranges */
+        // 判断有无重叠
 		if (end <= r->start || start >= r->end)
 			continue;
 
@@ -828,6 +829,8 @@ static void __init drop_overlaps_that_are_ok(u64 start, u64 end)
 		 * panic "Overlapping early reservations"
 		 * when it hits this overlap.
 		 */
+        // 既然这么判断,为撒要用个char...
+        // 对齐之后也不会少字节
 		if (!r->overlap_ok)
 			return;
 
@@ -837,6 +840,8 @@ static void __init drop_overlaps_that_are_ok(u64 start, u64 end)
 		 * portions (lower or upper) as separate, overlap_ok,
 		 * non-overlapping ranges.
 		 */
+        // ? 为撒要drop 了i,原来的不要了?
+        // BUG ?
 
 		/* 1. Note any non-overlapping (lower or upper) ranges. */
 		strncpy(name, r->name, sizeof(name) - 1);
@@ -875,6 +880,7 @@ static void __init __reserve_early(u64 start, u64 end, char *name,
 	int i;
 	struct early_res *r;
 
+    // 找到有重叠的early_res区域(为撒要有重叠?)
 	i = find_overlapped_early(start, end);
 	if (i >= MAX_EARLY_RES)
 		panic("Too many early reservations");
@@ -931,7 +937,7 @@ void __init reserve_early(u64 start, u64 end, char *name)
 		return;
 
 	drop_overlaps_that_are_ok(start, end);
-	__reserve_early(start, end, name, 0);
+	__reserve_early(start, end, name, 0); // 0 表示不可以分裂
 }
 
 void __init free_early(u64 start, u64 end)
