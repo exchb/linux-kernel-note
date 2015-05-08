@@ -407,6 +407,7 @@ static int __init early_ioremap_debug_setup(char *str)
 early_param("early_ioremap_debug", early_ioremap_debug_setup);
 
 static __initdata int after_paging_init;
+// 未初始化的全局变量...bss段... - -
 static pte_t bm_pte[PAGE_SIZE/sizeof(pte_t)] __page_aligned_bss;
 
 // addr 是虚拟地址
@@ -443,7 +444,8 @@ void __init early_ioremap_init(void)
 	for (i = 0; i < FIX_BTMAPS_SLOTS; i++)
 		slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*i);
 
-    // 获取FIX_BTMAP_BEGIN的pmd号
+    // 获取FIX_BTMAP_BEGIN的pmd号, 直接拿addr和cr3推算的
+    // 这个时候页表只有kernel的第一次分页swapper_pg_dir
 	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
 	// static pte_t bm_pte[PAGE_SIZE/sizeof(pte_t)] __page_aligned_bss;
 	// pm_pte占一页空间大小，共512项(64-bits)，一个pmd表示的所有空间范围
@@ -486,6 +488,7 @@ static void __init __early_set_fixmap(enum fixed_addresses idx,
 		BUG();
 		return;
 	}
+    // bm_pte , bss段空间
 	pte = early_ioremap_pte(addr);
 
 	if (pgprot_val(flags))
@@ -574,6 +577,7 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
 
 	/* Don't allow wraparound or zero size */
 	// 防止超出物理地址(可能是设备空间)空间可表示的范围
+    // 只防止了0size的情况啊? BUG?
 	last_addr = phys_addr + size - 1;
 	if (!size || last_addr < phys_addr) {
 		WARN_ON(1);
