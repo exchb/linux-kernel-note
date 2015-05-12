@@ -127,6 +127,10 @@ ENTRY(startup_32)
   * Build early 4G boot pagetable
   */
 	/* Initialize Page tables to 0 */
+    // pagetable 在本文件末尾声明的空间
+    // ebx = $LOAD_PHYSICAL_ADDR 这就是加载的物理地址.0x100000
+#endif
+    // edi = pagetable + ebx,这就是pagetable实际的物理地址
 	leal	pgtable(%ebx), %edi
 	xorl	%eax, %eax
 	movl	$((4096*6)/4), %ecx
