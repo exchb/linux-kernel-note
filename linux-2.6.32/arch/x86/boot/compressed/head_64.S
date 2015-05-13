@@ -137,11 +137,13 @@ ENTRY(startup_32)
 	rep	stosl
 
 	/* Build Level 4 */
+    // pdt 0 -> 0x1007
 	leal	pgtable + 0(%ebx), %edi
 	leal	0x1007 (%edi), %eax
 	movl	%eax, 0(%edi)
 
 	/* Build Level 3 */
+    // 这就只往下拉了0x1000,512个位置
 	leal	pgtable + 0x1000(%ebx), %edi
 	leal	0x1007(%edi), %eax
 	movl	$4, %ecx
