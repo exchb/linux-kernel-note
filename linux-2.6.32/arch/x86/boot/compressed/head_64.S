@@ -137,27 +137,47 @@ ENTRY(startup_32)
 	rep	stosl
 
 	/* Build Level 4 */
-    // pdt 0 -> 0x1007
+    // edi = pgtable + ebx = pgtable + 0x100000 = pgtable的物理地址
 	leal	pgtable + 0(%ebx), %edi
+    // eax = pgtable + 0x1007
 	leal	0x1007 (%edi), %eax
+    // 设置PGD 0(pgtable) -> pgtable + 0x1007
+    // 这0x1007就是给PGD留的位置
+    // #define PTRS_PER_PGD 512
 	movl	%eax, 0(%edi)
 
 	/* Build Level 3 */
-    // 这就只往下拉了0x1000,512个位置
+    // 这就只往下拉了0x1000,512个位置,同样的
+    // #define PTRS_PER_PUD 512
+    // edi = pgtable + 0x1000 + ebx = pgtable + 0x1000
 	leal	pgtable + 0x1000(%ebx), %edi
+    // 再往下拉了0x1007 -> eax
+    // eax = pgtable + 0x2007
 	leal	0x1007(%edi), %eax
 	movl	$4, %ecx
+    // 这就相当于edi又留了512空间给pud:
+    // pud 0 -> eax = pgtable + 0x2007
 1:	movl	%eax, 0x00(%edi)
 	addl	$0x00001000, %eax
+    // pud自增, eax也按0x1000自增
+    // pud 1 -> pgtable + 0x3007 .. 
+    // pud 3 -> pgtable + 0x5007
 	addl	$8, %edi
+    // ecx只有4
 	decl	%ecx
 	jnz	1b
 
 	/* Build Level 2 */
+    // pud 0开始,置上面的pud 0 - 3的pmd
 	leal	pgtable + 0x2000(%ebx), %edi
+    // 0x183是什么属性?
 	movl	$0x00000183, %eax
+    // 2048 = 512 * 4, 就是上面的4 pud
 	movl	$2048, %ecx
 1:	movl	%eax, 0(%edi)
+    // 这个值就是一个PMD大小 1<<PMD_SHIFT = 1 << 21
+    // eax从0开始,每次自增一个PMD
+    // pmd 从0x00000183开始?
 	addl	$0x00200000, %eax
 	addl	$8, %edi
 	decl	%ecx
