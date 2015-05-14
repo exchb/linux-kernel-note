@@ -183,6 +183,7 @@ ENTRY(startup_32)
 	decl	%ecx
 	jnz	1b
 
+    // pte没有设置?
 	/* Enable the boot page tables */
 	leal	pgtable(%ebx), %eax
 	movl	%eax, %cr3
