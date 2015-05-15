@@ -446,10 +446,12 @@ void __init early_ioremap_init(void)
 
     // 获取FIX_BTMAP_BEGIN的pmd号, 直接拿addr和cr3推算的
     // 这个时候页表只有kernel的第一次分页swapper_pg_dir
+    // fixmap有pgd的映射,没有pmd
 	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
 	// static pte_t bm_pte[PAGE_SIZE/sizeof(pte_t)] __page_aligned_bss;
 	// pm_pte占一页空间大小，共512项(64-bits)，一个pmd表示的所有空间范围
 	memset(bm_pte, 0, sizeof(bm_pte));
+    // 在没有半虚拟化的时候.就是设置pmd = bm_pte
 	pmd_populate_kernel(&init_mm, pmd, bm_pte);
 
 	/*

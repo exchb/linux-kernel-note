@@ -49,7 +49,7 @@ extern unsigned long __FIXADDR_TOP;
 #define FIXADDR_USER_END       __fix_to_virt(FIX_VDSO - 1)
 #else
 // VSYSCALL_END : (-2UL << 20)
-#define FIXADDR_TOP	(VSYSCALL_END-PAGE_SIZE)
+#define FIXADDR_TOP	(VSYSCALL_END - PAGE_SIZE)
 
 /* Only covers 32bit vsyscalls currently. Need another set for 64bit. */
 #define FIXADDR_USER_START	((unsigned long)VSYSCALL32_VSYSCALL)

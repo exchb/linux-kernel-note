@@ -802,6 +802,7 @@ void __init setup_arch(char **cmdline_p)
 	/* update the e820_saved too */
 
 	// 对setup_data所属的空间进行reserve保护
+    // 移出它的E820_RAM属性, 这样这块内存就不会再被分配了
 	e820_reserve_setup_data();
 
 	copy_edd();
