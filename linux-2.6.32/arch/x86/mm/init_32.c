@@ -779,6 +779,8 @@ static unsigned long __init setup_node_bootmem(int nodeid,
 	/* don't touch min_low_pfn */
     // call init_bootmem_core
     // 初始化bootmem的位图
+    //  pgdat->bdata,bdata->node_bootmem_map
+    //  这个map置位了start和end的长度
 	bootmap_size = init_bootmem_node(NODE_DATA(nodeid),
 					 bootmap >> PAGE_SHIFT,
 					 start_pfn, end_pfn);
