@@ -777,6 +777,8 @@ static unsigned long __init setup_node_bootmem(int nodeid,
 	unsigned long bootmap_size;
 
 	/* don't touch min_low_pfn */
+    // call init_bootmem_core
+    // 初始化bootmem的位图
 	bootmap_size = init_bootmem_node(NODE_DATA(nodeid),
 					 bootmap >> PAGE_SHIFT,
 					 start_pfn, end_pfn);
@@ -797,6 +799,7 @@ void __init setup_bootmem_allocator(void)
 	/*
 	 * Initialize the boot-time allocator (with low memory only):
 	 */
+    // 计算需要描述low_pfn 需要多少页帧(bootmap是一个位图)
 	bootmap_size = bootmem_bootmap_pages(max_low_pfn)<<PAGE_SHIFT;
 	bootmap = find_e820_area(0, max_pfn_mapped<<PAGE_SHIFT, bootmap_size,
 				 PAGE_SIZE);

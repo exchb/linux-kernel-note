@@ -977,6 +977,7 @@ void __init early_res_to_bootmem(u64 start, u64 end)
 		}
 		printk(KERN_CONT " ==> [%010llx - %010llx]\n",
 			final_start, final_end);
+        // 在map里面标记start/end
 		reserve_bootmem_generic(final_start, final_end - final_start,
 				BOOTMEM_DEFAULT);
 	}
